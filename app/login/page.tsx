@@ -1,0 +1,151 @@
+"use client";
+
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import Footer from "../components/Footer";
+import { Eye, EyeOff } from "lucide-react";
+
+
+export default function Page() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    if (!email || !password) {
+      setError("PLEASE ENTER EMAIL AND PASSWORD");
+      setLoading(false);
+      return;
+    }
+
+    const supabase = createClient();
+    const normalizedEmail = email.trim().toLowerCase();
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: normalizedEmail,
+      password,
+    });
+
+    if (authError) {
+      setError(authError.message);
+      setLoading(false);
+      return;
+    }
+
+    router.push("/");
+    router.refresh();
+  }
+
+  return (
+    <section className="relative min-h-[100svh] w-full overflow-hidden">
+      {/* DESKTOP VIDEO */}
+      <video
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+        poster="/poster.jpg"
+        className="hidden sm:block absolute inset-0 w-full h-full object-cover"
+      >
+        <source src="/exclusive-looped-clip-desktop.mp4" type="video/mp4" />
+      </video>
+
+      {/* MOBILE VIDEO */}
+      <video
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+        poster="/poster.jpg"
+        className="sm:hidden absolute inset-0 w-full h-full object-cover"
+      >
+        <source src="/exclusive-looped-clip-mobile.mp4" type="video/mp4" />
+      </video>
+
+      {/* DARK OVERLAY */}
+      <div className="absolute inset-0 bg-black/10" />
+
+      {/* CONTENT */}
+      <div className="relative z-20 min-h-[100svh] flex flex-col">
+        {/* SIGN UP - TOP OF SCREEN */}
+        <div className="pt-8 px-6 text-center">
+          <a
+            href="/signup/exclusive"
+            className="text-[9px] md:text-xs text-white uppercase transition-colors"
+          >
+            NOT AN EXCLUSIVE MEMBER? SIGN UP
+          </a>
+        </div>
+
+        {/* CENTER AREA */}
+        <div className="flex-1 flex items-center justify-center px-6">
+          <div className="w-full max-w-[340px] flex flex-col items-center">
+            {/* EMAIL */}
+            <input
+              type="email"
+              placeholder="EMAIL"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-3 py-2 bg-transparent border-0 border-b border-black/30 text-white text-center text-[10px] font-sans outline-none transition-colors duration-200 focus:border-white placeholder:text-white/40 placeholder:text-xs"
+            />
+
+
+            {/* PASSWORD */}
+            <div className="relative w-full">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="PASSWORD"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-3 pr-10 py-2 bg-transparent border-0 border-b border-black/30 text-white text-center text-[10px] font-sans outline-none transition-colors duration-200 focus:border-white placeholder:text-white/40 placeholder:text-xs"
+              />
+
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+
+            {/* ERROR MESSAGE */}
+            {error && (
+              <p className="mt-4 text-xs text-red-300 text-center">{error}</p>
+            )}
+
+            {/* ENTER BUTTON */}
+            <button
+              disabled={loading}
+              onClick={handleLogin}
+              className="
+          mt-5  text-white uppercase
+          text-[10px] font-light hover:opacity-60
+          transition-opacity disabled:opacity-30 cursor-pointer
+        "
+            >
+              {loading ? "ENTERING..." : "ENTER"}
+            </button>
+          </div>
+        </div>
+
+        {/* FOOTER — now perfectly responsive */}
+        <div className="pb-6 px-4">
+          <Footer />
+        </div>
+      </div>
+    </section>
+  );
+}

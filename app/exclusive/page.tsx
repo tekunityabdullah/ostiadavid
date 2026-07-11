@@ -1,0 +1,87 @@
+import Header from "../components/Header";
+import SubNav from "../components/SubNav";
+import Footer from "../components/Footer";
+import ProductCard from "../components/ProductCard";
+import { getExclusiveProducts } from "@/lib/products";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+
+export default async function ExclusivePage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("account_type")
+    .eq("id", user.id)
+    .single();
+
+  const isExclusive = profile?.account_type === "exclusive";
+
+  if (!isExclusive) {
+    return (
+      <div className="min-h-screen bg-black text-white flex flex-col">
+        <Header />
+        <SubNav activePage="exclusive" />
+
+        <main className="flex-1 flex items-center justify-center px-6 py-12">
+          <div className="w-full max-w-md text-center">
+            <h1 className="text-2xl md:text-4xl font-medium uppercase tracking-wide mb-4">
+              Exclusive Access Required
+            </h1>
+            <p className="text-sm text-white/70 mb-8">
+              You need an exclusive membership to access members-only drops.
+            </p>
+            <Link
+              href="/signup/exclusive"
+              className="inline-block px-8 py-3 text-xs uppercase tracking-tight font-medium text-black bg-white border-none cursor-pointer transition-colors duration-200 hover:bg-[#e5e5e5]"
+            >
+              Sign Up for Exclusive
+            </Link>
+          </div>
+        </main>
+
+        <Footer />
+      </div>
+    );
+  }
+
+  const products = await getExclusiveProducts();
+
+  return (
+    <div className="min-h-screen bg-black text-white flex flex-col">
+      <Header />
+      <SubNav activePage="exclusive" />
+
+      <main className="pt-32 flex justify-center w-full max-w-[1400px] mx-auto flex-1">
+        <section className="flex flex-col items-center px-4 pt-6 pb-8 w-full">
+          <h1 className="text-2xl md:text-4xl lg:text-5xl font-medium uppercase tracking-wide text-white mb-2 text-center">
+            Exclusive
+          </h1>
+          <p className="text-xs text-white/50 uppercase tracking-tight mb-10 text-center">
+            Members-only drops
+          </p>
+
+          {products.length === 0 ? (
+            <p className="text-sm text-white/50 uppercase tracking-tight py-12">
+              No exclusive drops available yet.
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full px-3 md:px-[60px]">
+              {products.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          )}
+        </section>
+      </main>
+
+      <Footer />
+    </div>
+  );
+}

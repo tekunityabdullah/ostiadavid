@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: #000000;
+  --color-foreground: #ffffff;
+  --font-sans: Arial, Helvetica, sans-serif;
+}
+
+::selection {
+  background: #fff;
+  color: #000;
+}
+
+ 
+
+/* Prevent viewport zoom */
+@viewport {
+  width: device-width;
+  initial-scale: 1;
+  maximum-scale: 1;
+  user-scalable: 0;
+}
+
+/* Make layout rigid */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  touch-action: manipulation;
+  overflow-x: hidden;
+}
