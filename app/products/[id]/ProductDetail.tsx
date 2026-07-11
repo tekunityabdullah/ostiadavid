@@ -90,7 +90,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
       variantLabel,
       name: product.name,
       price: displayPrice,
-      image: displayImage,
+      image: displayImage ?? "",
       quantity,
     };
   }
@@ -130,10 +130,10 @@ export default function ProductDetail({ product }: ProductDetailProps) {
         <section className="flex flex-col lg:flex-row gap-8 lg:gap-16 px-4 md:px-[60px] pt-6 pb-12 w-full">
           <div className="w-full lg:w-1/2 aspect-[3/4] max-h-[600px] overflow-hidden bg-black">
             <img
-              src={displayImage}
-              alt={product.name}
-              className="w-full h-full object-cover"
-            />
+  src={displayImage ?? ""}
+  alt={product.name}
+  className="w-full h-full object-cover"
+/>
           </div>
 
           <div className="w-full lg:w-1/2 flex flex-col gap-6">
