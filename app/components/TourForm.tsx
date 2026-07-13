@@ -12,7 +12,7 @@ export default function TourForm() {
           type="email"
           id="tour-email"
           aria-label="Enter Email For Updates"
-          placeholder="Enter Email For Updates"
+          placeholder="ENTER EMAIL FOR UPDATES"
           required
         />
       </div>

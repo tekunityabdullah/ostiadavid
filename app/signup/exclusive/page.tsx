@@ -125,90 +125,78 @@ function SignupForm() {
   }
 
   return (
-    <form onSubmit={handleSignup} className="flex flex-col gap-6">
-      {/* ACCOUNT SECTION */}
-      <div className="flex flex-col gap-4">
-        <h2 className="text-md uppercase tracking-tight text-white text-center">
-          ACCOUNT
-        </h2>
+    <form onSubmit={handleSignup} className="flex flex-col items-center gap-1">
+      <input
+        type="text"
+        placeholder="FULL NAME"
+        value={fullName}
+        onChange={(e) => setFullName(e.target.value)}
+        className="w-full px-4 py-2 bg-transparent text-white text-[10px] outline-none text-center placeholder:text-white/40 placeholder:text-[10px]"
+      />
+      <input
+        type="email"
+        placeholder="EMAIL"
+        required
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        className="w-full px-4 py-2 bg-transparent text-white text-[10px] outline-none text-center placeholder:text-white/40 placeholder:text-[10px]"
+      />
+      <div className="relative w-full">
         <input
-          type="text"
-          placeholder="FULL NAME"
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          className="w-full px-4 py-3 bg-transparent text-white text-sm outline-none text-center placeholder:text-white/40 placeholder:text-sm"
-        />
-        <input
-          type="email"
-          placeholder="EMAIL"
+          type={showPassword ? "text" : "password"}
+          placeholder="CREATE PASSWORD"
           required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full px-4 py-3 bg-transparent text-white text-sm outline-none text-center placeholder:text-white/40 placeholder:text-sm"
+          minLength={6}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="w-full pl-10 pr-10 py-2 bg-transparent text-white text-[10px] outline-none text-center placeholder:text-white/40 placeholder:text-[10px]"
         />
-        <div className="relative">
-          <input
-            type={showPassword ? "text" : "password"}
-            placeholder="CREATE PASSWORD"
-            required
-            minLength={6}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 pr-12 py-3 bg-transparent text-white text-sm outline-none text-center placeholder:text-white/40 placeholder:text-sm"
-          />
 
-          <button
-            type="button"
-            onClick={() => setShowPassword((prev) => !prev)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 z-10 text-white/70 hover:text-white"
-            aria-label={showPassword ? "Hide password" : "Show password"}
-          >
-            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => setShowPassword((prev) => !prev)}
+          className="absolute right-3 top-1/2 -translate-y-1/2 z-10 text-white/70 hover:text-white"
+          aria-label={showPassword ? "Hide password" : "Show password"}
+        >
+          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+        </button>
       </div>
 
-      {/* PAYMENT SECTION */}
-      <div className="flex flex-col gap-4">
-        <h2 className="text-md uppercase tracking-tight text-white text-center">
-          PAYMENT
-        </h2>
-        <div className="w-full px-4 py-3 bg-transparent text-white text-sm outline-none text-center">
-          {stripeError ? (
-            <p className="text-xs text-red-300">{stripeError}</p>
-          ) : (
-            <CardElement
-              options={{
-                style: {
-                  base: {
-                    color: "#ffffff",
-                    fontSize: "14px",
-                    "::placeholder": {
-                      color: "rgba(255, 255, 255, 0.4)",
-                    },
+      <div className="w-full px-4 py-2 bg-transparent text-white text-[10px] outline-none text-center">
+        {stripeError ? (
+          <p className="text-[10px] text-red-300">{stripeError}</p>
+        ) : (
+          <CardElement
+            options={{
+              style: {
+                base: {
+                  color: "#ffffff",
+                  fontSize: "10px",
+                  "::placeholder": {
+                    color: "rgba(255, 255, 255, 0.4)",
                   },
                 },
-              }}
-            />
-          )}
-        </div>
-        <input
-          type="text"
-          placeholder="ZIP CODE"
-          value={zipCode}
-          onChange={(e) => setZipCode(e.target.value)}
-          className="w-full px-4 py-3 bg-transparent text-white text-sm outline-none text-center placeholder:text-white/40 placeholder:text-sm"
-        />
+              },
+            }}
+          />
+        )}
       </div>
+      <input
+        type="text"
+        placeholder="ZIP CODE"
+        value={zipCode}
+        onChange={(e) => setZipCode(e.target.value)}
+        className="w-full px-4 py-2 bg-transparent text-white text-[10px] outline-none text-center placeholder:text-white/40 placeholder:text-[10px]"
+      />
 
-      {error && <p className="text-xs text-red-300 text-center">{error}</p>}
+      {error && <p className="text-[10px] text-red-300 text-center">{error}</p>}
 
       <button
         type="submit"
         disabled={loading}
-        className="w-full px-8 py-3 text-sm uppercase tracking-tight font-medium text-white bg-transparent cursor-pointer disabled:opacity-50"
+        className="mt-4 px-8 py-2 text-[10px] uppercase tracking-tight font-light text-white bg-transparent cursor-pointer disabled:opacity-50"
       >
-        {loading ? "PROCESSING..." : "PAY $9.99"}
+        {loading ? "PROCESSING..." : "9.99"}
       </button>
     </form>
   );
@@ -291,9 +279,9 @@ export default function ExclusiveSignupPage() {
         <div className="pt-8 px-6 text-center">
           <Link
             href="/login"
-            className="text-white uppercase text-[9px] md:text-xs transition-colors"
+            className="text-white uppercase text-[10px] font-light transition-colors"
           >
-            Already an exclusive member? Login
+            LOG IN
           </Link>
         </div>
 

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface SearchProduct {
   name: string;
@@ -25,55 +26,105 @@ const allProducts: SearchProduct[] = [
   { name: "OSITA ALTERNATE COVER POSTER", price: "$29.50", image: "https://cdn.shopify.com/s/files/1/0634/0706/3123/files/enhanced-matte-paper-poster-_cm_-a1-_59.4x84.1-cm_-front-69575c9ae40d5.png?v=1767333023", href: "/" },
 ];
 
+const TRANSITION_MS = 200;
+
 export default function SearchOverlay() {
-  const [isOpen, setIsOpen] = useState(false);
+  const router = useRouter();
+  const [isMounted, setIsMounted] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
   const [query, setQuery] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const open = useCallback(() => {
-    setIsOpen(true);
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
     setQuery("");
+    setActiveIndex(0);
+    setIsMounted(true);
   }, []);
 
   const close = useCallback(() => {
-    setIsOpen(false);
-    setQuery("");
+    setIsVisible(false);
+    closeTimerRef.current = setTimeout(() => {
+      setIsMounted(false);
+      setQuery("");
+    }, TRANSITION_MS);
   }, []);
 
+  // Mount with closed styles first, then flip to visible on the next frame
+  // so the CSS transition actually animates instead of snapping open.
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isMounted) return;
+    const raf = requestAnimationFrame(() => setIsVisible(true));
+    return () => cancelAnimationFrame(raf);
+  }, [isMounted]);
+
+  useEffect(() => {
+    if (!isMounted) return;
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const timer = setTimeout(() => inputRef.current?.focus(), 50);
+    const timer = setTimeout(() => inputRef.current?.focus(), TRANSITION_MS);
     return () => {
       document.body.style.overflow = originalOverflow;
       clearTimeout(timer);
     };
-  }, [isOpen]);
+  }, [isMounted]);
 
   useEffect(() => {
-    if (!isOpen) {
+    if (!isMounted) {
       triggerRef.current?.focus();
-      return;
     }
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") close();
+  }, [isMounted]);
+
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
     };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [isOpen, close]);
+  }, []);
 
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === overlayRef.current) close();
   };
 
-  const filtered = query.trim()
-    ? allProducts.filter((p) =>
-        p.name.toLowerCase().includes(query.trim().toLowerCase())
-      )
-    : allProducts;
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return q ? allProducts.filter((p) => p.name.toLowerCase().includes(q)) : allProducts;
+  }, [query]);
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [query]);
+
+  useEffect(() => {
+    const el = listRef.current?.querySelector(`[data-index="${activeIndex}"]`);
+    el?.scrollIntoView({ block: "nearest" });
+  }, [activeIndex]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Escape") {
+      close();
+      return;
+    }
+    if (!filtered.length) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((i) => (i + 1) % filtered.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((i) => (i - 1 + filtered.length) % filtered.length);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      const product = filtered[activeIndex];
+      if (product) {
+        close();
+        router.push(product.href);
+      }
+    }
+  };
 
   return (
     <>
@@ -81,7 +132,7 @@ export default function SearchOverlay() {
       <button
         ref={triggerRef}
         onClick={open}
-        className="bg-transparent border-none text-white cursor-pointer p-1 flex items-center transition-opacity duration-200 hover:opacity-70 active:scale-95 [&_svg]:w-6 [&_svg]:h-6"
+        className="bg-transparent border-none text-white cursor-pointer p-1 flex items-center transition-opacity duration-200 hover:opacity-70 active:scale-95 [&_svg]:w-5 [&_svg]:h-5"
         aria-label="Search"
       >
         <svg viewBox="0 0 256 256" fill="currentColor">
@@ -90,73 +141,92 @@ export default function SearchOverlay() {
       </button>
 
       {/* Overlay */}
-      {isOpen && (
+      {isMounted && (
         <div
           ref={overlayRef}
           onClick={handleBackdropClick}
-          className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-[12px] flex flex-col items-center pt-24 px-4"
+          className={`fixed inset-0 z-[200] flex justify-center px-4 pt-[max(5vh,24px)] sm:pt-[12vh] bg-black/70 backdrop-blur-sm transition-opacity duration-200 ease-out ${
+            isVisible ? "opacity-100" : "opacity-0"
+          }`}
         >
-          {/* Close button */}
-          <button
-            onClick={close}
-            className="absolute top-6 right-6 text-white p-2 transition-opacity duration-200 hover:opacity-70 active:scale-95 [&_svg]:w-6 [&_svg]:h-6"
-            aria-label="Close search"
+          {/* Command palette panel */}
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Search"
+            className={`w-full max-w-[560px] h-fit max-h-[76vh] flex flex-col bg-[#0c0c0c] border border-white/10 rounded-2xl shadow-2xl shadow-black/70 overflow-hidden transition-all duration-200 ease-out ${
+              isVisible ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-[0.97] -translate-y-2"
+            }`}
           >
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
+            {/* Input row */}
+            <div className="flex items-center gap-3 px-4 h-14 border-b border-white/10 shrink-0">
+              <svg viewBox="0 0 256 256" fill="currentColor" className="w-4 h-4 text-white/40 shrink-0">
+                <path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z" />
+              </svg>
+              <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="SEARCH PRODUCTS..."
+                aria-label="Search products"
+                autoComplete="off"
+                spellCheck={false}
+                className="flex-1 min-w-0 bg-transparent border-0 text-white text-sm font-sans uppercase tracking-tight outline-none placeholder:text-white/30"
               />
-            </svg>
-          </button>
-
-          {/* Search input */}
-          <div className="w-full max-w-[600px] flex flex-col items-center gap-6">
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search products..."
-              aria-label="Search products"
-              className="w-full bg-transparent border-0 border-b border-white/30 text-white text-center text-lg md:text-2xl font-sans uppercase tracking-tight outline-none py-3 transition-colors duration-200 focus:border-white placeholder:text-white/30"
-            />
+              <kbd className="hidden sm:inline-flex items-center justify-center text-[10px] text-white/40 border border-white/15 rounded px-1.5 py-0.5 uppercase tracking-tight shrink-0">
+                Esc
+              </kbd>
+              <button
+                onClick={close}
+                className="sm:hidden text-white/60 p-1 transition-opacity duration-200 hover:opacity-70 active:scale-95 shrink-0 [&_svg]:w-4 [&_svg]:h-4"
+                aria-label="Close search"
+              >
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
 
             {/* Results */}
-            <div className="w-full max-h-[60vh] overflow-y-auto">
+            <div ref={listRef} className="overflow-y-auto px-2 py-2">
               {filtered.length === 0 ? (
-                <p className="text-center text-sm text-white/50 uppercase tracking-tight py-8">
+                <p className="text-center text-xs text-white/40 uppercase tracking-tight py-10">
                   No results found
                 </p>
               ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-8">
-                  {filtered.map((product, index) => (
-                    <Link
-                      key={index}
-                      href={product.href}
-                      onClick={close}
-                      className="group flex flex-col gap-2 no-underline"
-                    >
-                      <div className="relative w-full aspect-[3/4] overflow-hidden bg-black">
-                        <img
-                          src={product.image}
-                          alt={product.name}
-                          className="w-full h-full object-cover block transition-transform duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] group-hover:scale-[1.03]"
-                        />
-                      </div>
-                      <div className="text-center py-1">
-                        <div className="text-xs md:text-sm font-medium uppercase tracking-tight text-white leading-normal">
-                          {product.name}
-                        </div>
-                        <div className="text-[10px] md:text-xs text-white/50 leading-normal mt-0.5">
-                          {product.price}
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
+                filtered.map((product, index) => (
+                  <Link
+                    key={index}
+                    href={product.href}
+                    data-index={index}
+                    onClick={close}
+                    onMouseEnter={() => setActiveIndex(index)}
+                    className={`flex items-center gap-3 px-2 py-2 rounded-lg no-underline transition-colors ${
+                      activeIndex === index ? "bg-white/10" : ""
+                    }`}
+                  >
+                    <div className="relative w-10 h-10 shrink-0 overflow-hidden rounded-md bg-black border border-white/10">
+                      <img
+                        src={product.image}
+                        alt={product.name}
+                        className="w-full h-full object-cover block"
+                      />
+                    </div>
+                    <span className="flex-1 min-w-0 truncate text-xs font-medium uppercase tracking-tight text-white">
+                      {product.name}
+                    </span>
+                    <span className="shrink-0 text-xs text-white/40">
+                      {product.price}
+                    </span>
+                  </Link>
+                ))
               )}
             </div>
           </div>

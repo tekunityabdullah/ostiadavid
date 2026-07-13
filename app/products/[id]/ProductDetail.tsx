@@ -128,7 +128,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
 
       <main className="pt-32 flex justify-center w-full max-w-[1400px] mx-auto flex-1">
         <section className="flex flex-col lg:flex-row gap-8 lg:gap-16 px-4 md:px-[60px] pt-6 pb-12 w-full">
-          <div className="w-full lg:w-1/2 aspect-[3/4] max-h-[600px] overflow-hidden bg-black">
+          <div className="w-full max-w-[240px] mx-auto lg:max-w-none lg:w-1/2 aspect-[3/4] max-h-[600px] overflow-hidden bg-black">
             <img
   src={displayImage ?? ""}
   alt={product.name}
@@ -136,30 +136,20 @@ export default function ProductDetail({ product }: ProductDetailProps) {
 />
           </div>
 
-          <div className="w-full lg:w-1/2 flex flex-col gap-6">
+          <div className="w-full lg:w-1/2 flex flex-col items-center text-center lg:items-start lg:text-left gap-6">
             {product.is_exclusive && (
               <span className="text-[10px] uppercase tracking-[0.2em] text-white/50">
                 Exclusive Drop
               </span>
             )}
-            <h1 className="text-2xl md:text-4xl font-medium uppercase tracking-wide">
+            <h1 className="text-lg md:text-2xl font-medium uppercase tracking-wide">
               {product.name}
             </h1>
-            <p className="text-xl font-medium">{formatPrice(displayPrice)}</p>
-            {product.category && (
-              <p className="text-xs uppercase tracking-tight text-white/50">
-                {product.category}
-              </p>
-            )}
-            {product.description && (
-              <p className="text-sm text-white/70 leading-relaxed max-w-lg">
-                {product.description}
-              </p>
-            )}
+            <p className="text-base font-medium">{formatPrice(displayPrice)}</p>
 
             {colors.length > 0 && (
-              <div className="flex flex-col gap-2">
-                <span className="text-xs uppercase tracking-tight text-white/50">
+              <div className="flex flex-col items-center lg:items-start gap-2">
+                <span className="text-xs uppercase tracking-tight text-white">
                   Color{colors.length > 1 ? "" : `: ${colors[0]}`}
                 </span>
                 {colors.length > 1 && (
@@ -183,9 +173,9 @@ export default function ProductDetail({ product }: ProductDetailProps) {
             )}
 
             {sizes.length > 0 && (
-              <div className="flex flex-col gap-2">
-                <span className="text-xs uppercase tracking-tight text-white/50">Size</span>
-                <div className="flex flex-wrap gap-2">
+              <div className="flex flex-col items-center lg:items-start gap-2">
+                <span className="text-xs uppercase tracking-tight text-white">Size</span>
+                <div className="flex flex-wrap justify-center lg:justify-start gap-2">
                   {sizes.map((size) => {
                     const optionAvailable = variants.some(
                       (v) =>
@@ -198,10 +188,8 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                         key={size}
                         onClick={() => setSelectedSize(size)}
                         disabled={!optionAvailable}
-                       className={`px-4 py-2 text-xs uppercase tracking-tight transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
-  selectedSize === size
-    ? "text-white"
-    : "text-gray-500 hover:text-white"
+                       className={`px-4 py-2 text-xs uppercase tracking-tight text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
+  selectedSize === size ? "underline underline-offset-4" : ""
 }`}
                       >
                         {size}
@@ -220,7 +208,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
               <p className="text-xs text-red-300">This option is currently out of stock.</p>
             )}
 
-           <div className="flex justify-center md:justify-start mt-4">
+           <div className="flex justify-center mt-4">
   <div className="flex items-center border border-white/20">
     <button
       onClick={() => setQuantity((q) => Math.max(1, q - 1))}
@@ -286,7 +274,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                     <p className="text-sm text-white/70 text-center">
                       Please log in to complete your purchase
                     </p>
-                    <Link
+                    <Link 
                       href="/signup"
                       className="w-full px-8 py-3 text-xs uppercase tracking-tight font-medium text-black bg-white border-none cursor-pointer transition-colors duration-200 hover:bg-[#e5e5e5] active:scale-95 text-center no-underline"
                     >
@@ -311,7 +299,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
 
             <button
               onClick={() => router.push("/cart")}
-              className="text-xs uppercase tracking-tight text-white/50 hover:text-white transition-colors text-left"
+              className="self-start text-xs uppercase tracking-tight text-white hover:text-white/70 transition-colors text-left"
             >
               View Cart
             </button>

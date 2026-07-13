@@ -80,9 +80,9 @@ export default function Page() {
         <div className="pt-8 px-6 text-center">
           <a
             href="/signup/exclusive"
-            className="text-[9px] md:text-xs text-white uppercase transition-colors"
+            className="text-[10px] font-light text-white uppercase transition-colors"
           >
-            NOT AN EXCLUSIVE MEMBER? SIGN UP
+            JOIN
           </a>
         </div>
 
@@ -108,7 +108,7 @@ export default function Page() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 pr-10 py-2 bg-transparent border-0 border-b border-black/30 text-white text-center text-[10px] font-sans outline-none transition-colors duration-200 focus:border-white placeholder:text-white/40 placeholder:text-xs"
+                className="w-full pl-10 pr-10 py-2 bg-transparent border-0 border-b border-black/30 text-white text-center text-[10px] font-sans outline-none transition-colors duration-200 focus:border-white placeholder:text-white/40 placeholder:text-xs"
               />
 
               <button

@@ -116,7 +116,7 @@ export default function SignupPage() {
       <main className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-6xl grid md:grid-cols-2 gap-8">
           {/* Sign In Section */}
-          <div className="border border-gray-700 p-6 sm:p-8 flex flex-col">
+          <div className="border border-white/30 p-6 sm:p-8 flex flex-col">
             <h2 className="text-base text-[12px] sm:text-lg md:text-xl font-medium uppercase tracking-wide mb-6">
               Sign In To Your Existing Account
             </h2>
@@ -131,7 +131,7 @@ export default function SignupPage() {
                   required
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
-                  className="w-full px-4 py-3 bg-transparent border border-gray-600 text-white text-[12px] outline-none  placeholder:text-white/40 placeholder:text-xs"
+                  className="w-full px-4 py-3 bg-transparent border border-white/30 text-white text-[12px] outline-none  placeholder:text-white/40 placeholder:text-xs"
                   placeholder="ENTER YOUR EMAIL"
                 />
               </div>
@@ -147,7 +147,7 @@ export default function SignupPage() {
                     required
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
-                    className="w-full px-4 pr-12 py-3 bg-transparent border border-gray-600 text-white text-xs outline-none  placeholder:text-white/40 placeholder:text-xs"
+                    className="w-full px-4 pr-12 py-3 bg-transparent border border-white/30 text-white text-xs outline-none  placeholder:text-white/40 placeholder:text-xs"
                     placeholder="ENTER YOUR PASSWORD"
                   />
 
@@ -196,7 +196,7 @@ export default function SignupPage() {
           </div>
 
           {/* Create Account Section */}
-          <div className="border border-gray-700 p-6 sm:p-8 flex flex-col">
+          <div className="border border-white/30 p-6 sm:p-8 flex flex-col">
             <h2 className="text-base text-[12px] sm:text-lg md:text-xl font-medium uppercase tracking-wide mb-6">
               Create Account
             </h2>
@@ -228,7 +228,7 @@ export default function SignupPage() {
                       required
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
-                      className="w-full px-4 py-3 bg-transparent border border-gray-600 text-white text-xs outline-none  placeholder:text-white/40 placeholder:text-xs"
+                      className="w-full px-4 py-3 bg-transparent border border-white/30 text-white text-xs outline-none  placeholder:text-white/40 placeholder:text-xs"
                       placeholder="FIRST NAME"
                     />
                   </div>
@@ -241,7 +241,7 @@ export default function SignupPage() {
                       required
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
-                      className="w-full px-4 py-3 bg-transparent border border-gray-600 text-white text-xs outline-none  placeholder:text-white/40 placeholder:text-xs"
+                      className="w-full px-4 py-3 bg-transparent border border-white/30 text-white text-xs outline-none  placeholder:text-white/40 placeholder:text-xs"
                       placeholder="LAST NAME"
                     />
                   </div>
@@ -256,7 +256,7 @@ export default function SignupPage() {
                     required
                     value={signupEmail}
                     onChange={(e) => setSignupEmail(e.target.value)}
-                    className="w-full px-4 py-3 bg-transparent border border-gray-600 text-white text-xs outline-none  placeholder:text-white/40 placeholder:text-xs"
+                    className="w-full px-4 py-3 bg-transparent border border-white/30 text-white text-xs outline-none  placeholder:text-white/40 placeholder:text-xs"
                     placeholder="ENTER YOUR EMAIL"
                   />
                 </div>
@@ -272,7 +272,7 @@ export default function SignupPage() {
                       required
                       value={signupPassword}
                       onChange={(e) => setSignupPassword(e.target.value)}
-                      className="w-full px-4 pr-12 py-3 bg-transparent border border-gray-600 text-white text-xs outline-none  placeholder:text-white/40 placeholder:text-xs"
+                      className="w-full px-4 pr-12 py-3 bg-transparent border border-white/30 text-white text-xs outline-none  placeholder:text-white/40 placeholder:text-xs"
                       placeholder="CREATE A PASSWORD"
                     />
 
