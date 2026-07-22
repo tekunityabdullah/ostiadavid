@@ -1,6 +1,6 @@
   import { createClient } from "@/lib/supabase/server";
   import type { Product } from "@/lib/types";
-  import { getAccountType } from "@/lib/auth";
+  import { getAccountType, isAdmin } from "@/lib/auth";
 
   export async function getRegularProducts(): Promise<Product[]> {
     const supabase = await createClient();
@@ -26,7 +26,7 @@
       ascending: false,
     });
 
-    if (accountType !== "exclusive" && accountType !== "admin") {
+    if (accountType !== "exclusive" && !(await isAdmin())) {
       query = query.eq("is_exclusive", false);
     }
 
@@ -69,7 +69,7 @@
     const product = data as Product;
     if (product.is_exclusive) {
       const accountType = await getAccountType();
-      if (accountType !== "exclusive" && accountType !== "admin") return null;
+      if (accountType !== "exclusive" && !(await isAdmin())) return null;
     }
 
     return product;

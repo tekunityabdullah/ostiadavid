@@ -1,48 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import AdminProductTile from "./AdminProductTile";
 import ProductForm from "./ProductForm";
 
 export default function AdminPage() {
-  const router = useRouter();
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
-    // Check admin session
-    const adminSession = localStorage.getItem("adminSession");
-    const adminTimestamp = localStorage.getItem("adminTimestamp");
-    
-    if (!adminSession || adminSession !== "true") {
-      router.push("/admin/login");
-      return;
-    }
-
-    // Check session expiry (24 hours)
-    if (adminTimestamp) {
-      const sessionAge = Date.now() - parseInt(adminTimestamp);
-      const maxAge = 24 * 60 * 60 * 1000; // 24 hours
-      
-      if (sessionAge > maxAge) {
-        localStorage.removeItem("adminSession");
-        localStorage.removeItem("adminTimestamp");
-        router.push("/admin/login");
-        return;
-      }
-    }
-
-    // Load products from API
+    // Admin access is enforced server-side in proxy.ts middleware — this
+    // component only renders for authenticated admin accounts.
     fetch("/api/admin/products")
       .then(res => res.json())
       .then(data => setProducts(data))
       .catch(err => console.error("Failed to load products:", err))
       .finally(() => setLoading(false));
-  }, [router]);
+  }, []);
 
   const handlePrintfulSync = async () => {
     setSyncing(true);

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 interface SearchProduct {
   name: string;
@@ -29,21 +28,17 @@ const allProducts: SearchProduct[] = [
 const TRANSITION_MS = 200;
 
 export default function SearchOverlay() {
-  const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [query, setQuery] = useState("");
-  const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const listRef = useRef<HTMLDivElement>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const open = useCallback(() => {
     if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
     setQuery("");
-    setActiveIndex(0);
     setIsMounted(true);
   }, []);
 
@@ -77,8 +72,14 @@ export default function SearchOverlay() {
   useEffect(() => {
     if (!isMounted) {
       triggerRef.current?.focus();
+      return;
     }
-  }, [isMounted]);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") close();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [isMounted, close]);
 
   useEffect(() => {
     return () => {
@@ -92,39 +93,9 @@ export default function SearchOverlay() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return q ? allProducts.filter((p) => p.name.toLowerCase().includes(q)) : allProducts;
+    if (!q) return [];
+    return allProducts.filter((p) => p.name.toLowerCase().includes(q));
   }, [query]);
-
-  useEffect(() => {
-    setActiveIndex(0);
-  }, [query]);
-
-  useEffect(() => {
-    const el = listRef.current?.querySelector(`[data-index="${activeIndex}"]`);
-    el?.scrollIntoView({ block: "nearest" });
-  }, [activeIndex]);
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Escape") {
-      close();
-      return;
-    }
-    if (!filtered.length) return;
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setActiveIndex((i) => (i + 1) % filtered.length);
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setActiveIndex((i) => (i - 1 + filtered.length) % filtered.length);
-    } else if (e.key === "Enter") {
-      e.preventDefault();
-      const product = filtered[activeIndex];
-      if (product) {
-        close();
-        router.push(product.href);
-      }
-    }
-  };
 
   return (
     <>
@@ -145,22 +116,18 @@ export default function SearchOverlay() {
         <div
           ref={overlayRef}
           onClick={handleBackdropClick}
-          className={`fixed inset-0 z-[200] flex justify-center px-4 pt-[max(5vh,24px)] sm:pt-[12vh] bg-black/70 backdrop-blur-sm transition-opacity duration-200 ease-out ${
+          className={`fixed inset-0 z-[200] flex justify-center px-4 pt-[max(5vh,24px)] sm:pt-[12vh] bg-black/60 transition-opacity duration-200 ease-out ${
             isVisible ? "opacity-100" : "opacity-0"
           }`}
         >
-          {/* Command palette panel */}
+          {/* Search bar */}
           <div
-            role="dialog"
-            aria-modal="true"
-            aria-label="Search"
-            className={`w-full max-w-[560px] h-fit max-h-[76vh] flex flex-col bg-[#0c0c0c] border border-white/10 rounded-2xl shadow-2xl shadow-black/70 overflow-hidden transition-all duration-200 ease-out ${
+            className={`w-full max-w-[520px] h-fit bg-white rounded-md shadow-xl overflow-hidden transition-all duration-200 ease-out ${
               isVisible ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-[0.97] -translate-y-2"
             }`}
           >
-            {/* Input row */}
-            <div className="flex items-center gap-3 px-4 h-14 border-b border-white/10 shrink-0">
-              <svg viewBox="0 0 256 256" fill="currentColor" className="w-4 h-4 text-white/40 shrink-0">
+            <div className="flex items-center gap-3 px-4 h-12">
+              <svg viewBox="0 0 256 256" fill="currentColor" className="w-4 h-4 text-black/40 shrink-0">
                 <path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z" />
               </svg>
               <input
@@ -168,19 +135,15 @@ export default function SearchOverlay() {
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={handleKeyDown}
                 placeholder="SEARCH PRODUCTS..."
                 aria-label="Search products"
                 autoComplete="off"
                 spellCheck={false}
-                className="flex-1 min-w-0 bg-transparent border-0 text-white text-sm font-sans uppercase tracking-tight outline-none placeholder:text-white/30"
+                className="flex-1 min-w-0 bg-transparent border-0 text-black text-sm font-sans uppercase tracking-tight outline-none placeholder:text-black/40"
               />
-              <kbd className="hidden sm:inline-flex items-center justify-center text-[10px] text-white/40 border border-white/15 rounded px-1.5 py-0.5 uppercase tracking-tight shrink-0">
-                Esc
-              </kbd>
               <button
                 onClick={close}
-                className="sm:hidden text-white/60 p-1 transition-opacity duration-200 hover:opacity-70 active:scale-95 shrink-0 [&_svg]:w-4 [&_svg]:h-4"
+                className="text-black/50 p-1 transition-opacity duration-200 hover:opacity-70 active:scale-95 shrink-0 [&_svg]:w-4 [&_svg]:h-4"
                 aria-label="Close search"
               >
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -194,41 +157,31 @@ export default function SearchOverlay() {
               </button>
             </div>
 
-            {/* Results */}
-            <div ref={listRef} className="overflow-y-auto px-2 py-2">
-              {filtered.length === 0 ? (
-                <p className="text-center text-xs text-white/40 uppercase tracking-tight py-10">
-                  No results found
-                </p>
-              ) : (
-                filtered.map((product, index) => (
-                  <Link
-                    key={index}
-                    href={product.href}
-                    data-index={index}
-                    onClick={close}
-                    onMouseEnter={() => setActiveIndex(index)}
-                    className={`flex items-center gap-3 px-2 py-2 rounded-lg no-underline transition-colors ${
-                      activeIndex === index ? "bg-white/10" : ""
-                    }`}
-                  >
-                    <div className="relative w-10 h-10 shrink-0 overflow-hidden rounded-md bg-black border border-white/10">
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-full h-full object-cover block"
-                      />
-                    </div>
-                    <span className="flex-1 min-w-0 truncate text-xs font-medium uppercase tracking-tight text-white">
-                      {product.name}
-                    </span>
-                    <span className="shrink-0 text-xs text-white/40">
-                      {product.price}
-                    </span>
-                  </Link>
-                ))
-              )}
-            </div>
+            {query.trim() && (
+              <div className="border-t border-black/10 max-h-[60vh] overflow-y-auto">
+                {filtered.length === 0 ? (
+                  <p className="text-center text-xs text-black/40 uppercase tracking-tight py-6">
+                    No results
+                  </p>
+                ) : (
+                  filtered.map((product, index) => (
+                    <Link
+                      key={index}
+                      href={product.href}
+                      onClick={close}
+                      className="flex items-center justify-between gap-3 px-4 py-3 no-underline hover:bg-black/5 transition-colors border-b border-black/5 last:border-b-0"
+                    >
+                      <span className="text-xs font-medium uppercase tracking-tight text-black">
+                        {product.name}
+                      </span>
+                      <span className="shrink-0 text-xs text-black/50">
+                        {product.price}
+                      </span>
+                    </Link>
+                  ))
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

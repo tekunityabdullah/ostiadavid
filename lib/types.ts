@@ -1,4 +1,4 @@
-export type AccountType = "regular" | "exclusive" | "admin";
+export type AccountType = "regular" | "exclusive";
 
 export interface Profile {
   id: string;
@@ -21,6 +21,8 @@ export interface Product {
   printful_id?: number | null;
   printful_variant_id?: number | null;
   printful_variants?: string | null;
+  is_digital?: boolean;
+  digital_file_path?: string | null;
 }
 
 export interface CartItem {
@@ -34,6 +36,7 @@ export interface CartItem {
   price: number;
   image: string;
   quantity: number;
+  isDigital?: boolean;
 }
 
 export interface ShippingAddress {

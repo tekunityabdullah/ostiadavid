@@ -90,15 +90,6 @@ export default function SignupPage() {
       return;
     }
 
-    if (data.user) {
-      await supabase.from("profiles").upsert({
-        id: data.user.id,
-        full_name: `${firstName} ${lastName}`.trim(),
-        first_name: firstName,
-        last_name: lastName,
-      });
-    }
-
     if (data.session) {
       router.push("/");
       router.refresh();

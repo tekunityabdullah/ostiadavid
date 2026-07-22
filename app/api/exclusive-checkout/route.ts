@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 
 function getStripe() {
   return new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -70,7 +70,13 @@ export async function POST(request: Request) {
       },
     });
 
-    await supabase
+    // Use the service-role client here, not the user-scoped one — right
+    // after signUp() there may be no active session yet (e.g. email
+    // confirmation pending), which would make this update a silent RLS
+    // no-op. This upgrade must land reliably regardless of session state;
+    // the Stripe webhook performs the same upgrade as a backstop.
+    const serviceClient = await createServiceClient();
+    await serviceClient
       .from("profiles")
       .update({
         account_type: "exclusive",

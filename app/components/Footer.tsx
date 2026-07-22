@@ -24,6 +24,7 @@ export default function Footer() {
         <a
           href="https://open.spotify.com/artist/3d5DZ5YLW77RNM62AFObl5?si=oYnW_NYuTLCjZY_EK-rx_A/"
           target="_blank"
+          rel="noopener noreferrer"
           aria-label="Spotify"
           className="text-white no-underline flex items-center transition-all duration-200 hover:opacity-70 hover:scale-110 [&_svg]:w-4 [&_svg]:h-4"
         >
@@ -36,6 +37,7 @@ export default function Footer() {
         <a
           href="https://youtube.com/@ositadavd?si=3rPTcHUOdpxjt39X/"
           target="_blank"
+          rel="noopener noreferrer"
           aria-label="YouTube"
           className="text-white no-underline flex items-center transition-all duration-200 hover:opacity-70 hover:scale-110 [&_svg]:w-4 [&_svg]:h-4"
         >
@@ -48,6 +50,7 @@ export default function Footer() {
         <a
           href="https://www.instagram.com/ositadavd?igsh=NTc4MTIwNjQ2YQ%3D%3D&utm_source=qr/"
           target="_blank"
+          rel="noopener noreferrer"
           aria-label="Instagram"
           className="text-white no-underline flex items-center transition-all duration-200 hover:opacity-70 hover:scale-110 [&_svg]:w-4 [&_svg]:h-4"
         >
@@ -60,6 +63,7 @@ export default function Footer() {
         <a
           href="https://soundcloud.com/ositadavid"
           target="_blank"
+          rel="noopener noreferrer"
           aria-label="SoundCloud"
           className="text-white no-underline flex items-center transition-all duration-200 hover:opacity-70 hover:scale-110 [&_svg]:w-4 [&_svg]:h-4"
         >
@@ -72,6 +76,7 @@ export default function Footer() {
         <a
           href="https://music.apple.com/us/artist/osita-david/1825984531/"
           target="_blank"
+          rel="noopener noreferrer"
           aria-label="Apple Music"
           className="text-white no-underline flex items-center transition-all duration-200 hover:opacity-70 hover:scale-110 [&_svg]:w-4 [&_svg]:h-4"
         >

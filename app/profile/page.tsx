@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/utils";
 import type { Order, OrderItem, Profile } from "@/lib/types";
 import ProfileActions from "./ProfileActions";
+import DownloadButton from "./DownloadButton";
 
 export default async function ProfilePage() {
   const supabase = await createClient();
@@ -34,6 +35,7 @@ export default async function ProfilePage() {
 
   const orderIds = typedOrders.map((o) => o.id);
   let orderItemsMap: Record<string, OrderItem[]> = {};
+  let digitalItems: OrderItem[] = [];
 
   if (orderIds.length > 0) {
     const { data: orderItems } = await supabase
@@ -41,7 +43,9 @@ export default async function ProfilePage() {
       .select("*")
       .in("order_id", orderIds);
 
-    orderItemsMap = ((orderItems ?? []) as OrderItem[]).reduce(
+    const typedOrderItems = (orderItems ?? []) as OrderItem[];
+
+    orderItemsMap = typedOrderItems.reduce(
       (acc, item) => {
         if (!acc[item.order_id]) acc[item.order_id] = [];
         acc[item.order_id].push(item);
@@ -49,6 +53,26 @@ export default async function ProfilePage() {
       },
       {} as Record<string, OrderItem[]>
     );
+
+    const productIds = [
+      ...new Set(typedOrderItems.map((i) => i.product_id).filter(Boolean)),
+    ] as string[];
+
+    if (productIds.length > 0) {
+      const { data: digitalProducts } = await supabase
+        .from("products")
+        .select("id")
+        .eq("is_digital", true)
+        .in("id", productIds);
+
+      const digitalProductIds = new Set(
+        (digitalProducts ?? []).map((p) => p.id)
+      );
+
+      digitalItems = typedOrderItems.filter(
+        (i) => i.product_id && digitalProductIds.has(i.product_id)
+      );
+    }
   }
 
   const joinedDate = typedProfile?.created_at
@@ -112,6 +136,21 @@ export default async function ProfilePage() {
             </div>
 
             <div className="flex-1 flex flex-col gap-6">
+              {digitalItems.length > 0 && (
+                <div className="border border-white/20 p-6 flex flex-col gap-3">
+                  <h2 className="text-sm uppercase tracking-tight font-medium text-white">
+                    Your Downloads
+                  </h2>
+                  {digitalItems.map((item) => (
+                    <DownloadButton
+                      key={item.id}
+                      productId={item.product_id!}
+                      productName={item.product_name}
+                    />
+                  ))}
+                </div>
+              )}
+
               <div className="border border-white/20 p-6 flex flex-col gap-4">
                 <h2 className="text-sm uppercase tracking-tight font-medium text-white">
                   Order History

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LockKeyhole } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 interface AdminLoginFormProps {
   initialError?: string;
@@ -10,6 +11,7 @@ interface AdminLoginFormProps {
 
 export default function AdminLoginForm({ initialError = "" }: AdminLoginFormProps) {
   const router = useRouter();
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(initialError);
@@ -19,24 +21,20 @@ export default function AdminLoginForm({ initialError = "" }: AdminLoginFormProp
     setLoading(true);
     setError("");
 
-    const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
+    const supabase = createClient();
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    });
 
-    if (!adminPassword) {
-      setError("Admin password not configured.");
+    if (authError) {
+      setError(authError.message);
       setLoading(false);
       return;
     }
 
-    if (password !== adminPassword) {
-      setError("Invalid admin password.");
-      setLoading(false);
-      return;
-    }
-
-    // Set admin session in localStorage
-    localStorage.setItem("adminSession", "true");
-    localStorage.setItem("adminTimestamp", Date.now().toString());
-
+    // proxy.ts middleware verifies admins-table membership on the way in —
+    // a non-admin account will be bounced back to "/" from here.
     router.push("/admin");
     router.refresh();
   }
@@ -57,8 +55,16 @@ export default function AdminLoginForm({ initialError = "" }: AdminLoginFormProp
 
       <div className="grid gap-4">
         <input
+          type="email"
+          placeholder="EMAIL"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="h-12 w-full border border-white/20 bg-black px-4 text-center text-sm text-white outline-none placeholder:text-white/35 focus:border-white"
+        />
+        <input
           type="password"
-          placeholder="ADMIN PASSWORD"
+          placeholder="PASSWORD"
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -73,7 +79,7 @@ export default function AdminLoginForm({ initialError = "" }: AdminLoginFormProp
         disabled={loading}
         className="inline-flex h-12 items-center justify-center border border-white bg-white px-5 text-xs font-medium uppercase tracking-[0.22em] text-black transition hover:bg-black hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {loading ? "Checking..." : "Enter Admin"}
+        {loading ? "Signing in..." : "Enter Admin"}
       </button>
     </form>
   );

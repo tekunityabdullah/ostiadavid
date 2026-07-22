@@ -36,16 +36,19 @@ function InlineCheckoutForm({ items, onSuccess, submitLabel = "PAY" }: InlineChe
     setAddress((prev) => ({ ...prev, [field]: value }));
   }
 
+  const requiresShipping = items.some((i) => !i.isDigital);
+
   const addressComplete =
-    address.name.trim() !== "" &&
-    address.address1.trim() !== "" &&
-    address.city.trim() !== "" &&
-    address.stateCode.trim() !== "" &&
-    address.countryCode.trim() !== "" &&
-    address.zip.trim() !== "";
+    !requiresShipping ||
+    (address.name.trim() !== "" &&
+      address.address1.trim() !== "" &&
+      address.city.trim() !== "" &&
+      address.stateCode.trim() !== "" &&
+      address.countryCode.trim() !== "" &&
+      address.zip.trim() !== "");
 
   const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  const shipping = subtotal > 0 ? 8.0 : 0;
+  const shipping = requiresShipping && subtotal > 0 ? 8.0 : 0;
   const total = subtotal + shipping;
 
   async function handleCheckout(e: React.FormEvent) {
@@ -127,6 +130,7 @@ function InlineCheckoutForm({ items, onSuccess, submitLabel = "PAY" }: InlineChe
           <span>{formatPrice(total)}</span>
         </div>
 
+        {requiresShipping && (
         <div className="flex flex-col gap-2 mt-4">
           <h3 className="text-sm uppercase tracking-tight text-white/70">
             SHIPPING ADDRESS
@@ -201,6 +205,7 @@ function InlineCheckoutForm({ items, onSuccess, submitLabel = "PAY" }: InlineChe
             />
           </div>
         </div>
+        )}
 
         <div className="flex flex-col gap-2 mt-4">
           <h3 className="text-sm uppercase tracking-tight text-white/70">

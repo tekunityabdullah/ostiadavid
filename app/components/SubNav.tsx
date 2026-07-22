@@ -12,7 +12,7 @@ export default function SubNav({ activePage }: SubNavProps) {
 
   return (
     <div className="fixed top-[56px] sm:top-[68px] left-0 w-full z-[90] bg-black flex justify-center py-3 sm:py-4">
-      <nav className="flex gap-10 sm:gap-16 md:gap-24 px-6 sm:px-10 py-3 items-center text-[11px]">
+      <nav className="flex gap-14 sm:gap-20 md:gap-28 px-6 sm:px-10 py-3 items-center text-[11px]">
 
         {/* EXCLUSIVE */}
         <Link href="/exclusive" className="uppercase tracking-tight font-medium text-white hover:opacity-70 transition">

@@ -67,13 +67,6 @@ function SignupForm() {
       return;
     }
 
-    if (data.user && fullName) {
-      await supabase.from("profiles").upsert({
-        id: data.user.id,
-        full_name: fullName,
-      });
-    }
-
     const cardElement = elements.getElement(CardElement);
     if (!cardElement) {
       setError("CARD ELEMENT NOT FOUND.");

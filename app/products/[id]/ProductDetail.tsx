@@ -91,7 +91,8 @@ export default function ProductDetail({ product }: ProductDetailProps) {
       name: product.name,
       price: displayPrice,
       image: displayImage ?? "",
-      quantity,
+      quantity: product.is_digital ? 1 : quantity,
+      isDigital: product.is_digital,
     };
   }
 
@@ -128,11 +129,11 @@ export default function ProductDetail({ product }: ProductDetailProps) {
 
       <main className="pt-32 flex justify-center w-full max-w-[1400px] mx-auto flex-1">
         <section className="flex flex-col lg:flex-row gap-8 lg:gap-16 px-4 md:px-[60px] pt-6 pb-12 w-full">
-          <div className="w-full max-w-[240px] mx-auto lg:max-w-none lg:w-1/2 aspect-[3/4] max-h-[600px] overflow-hidden bg-black">
+          <div className="w-full max-w-[200px] mx-auto lg:max-w-none lg:w-1/2 aspect-[3/4] max-h-[600px] overflow-hidden bg-black">
             <img
   src={displayImage ?? ""}
   alt={product.name}
-  className="w-full h-full object-cover"
+  className="w-full h-full object-contain"
 />
           </div>
 
@@ -140,6 +141,11 @@ export default function ProductDetail({ product }: ProductDetailProps) {
             {product.is_exclusive && (
               <span className="text-[10px] uppercase tracking-[0.2em] text-white/50">
                 Exclusive Drop
+              </span>
+            )}
+            {product.is_digital && (
+              <span className="text-[10px] uppercase tracking-[0.2em] text-white/50">
+                Digital Download
               </span>
             )}
             <h1 className="text-lg md:text-2xl font-medium uppercase tracking-wide">
@@ -188,9 +194,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                         key={size}
                         onClick={() => setSelectedSize(size)}
                         disabled={!optionAvailable}
-                       className={`px-4 py-2 text-xs uppercase tracking-tight text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
-  selectedSize === size ? "underline underline-offset-4" : ""
-}`}
+                       className="px-4 py-2 text-xs uppercase tracking-tight text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                       >
                         {size}
                       </button>
@@ -208,7 +212,8 @@ export default function ProductDetail({ product }: ProductDetailProps) {
               <p className="text-xs text-red-300">This option is currently out of stock.</p>
             )}
 
-           <div className="flex justify-center mt-4">
+           {!product.is_digital && (
+             <div className="flex justify-center mt-4">
   <div className="flex items-center border border-white/20">
     <button
       onClick={() => setQuantity((q) => Math.max(1, q - 1))}
@@ -231,8 +236,9 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     </button>
   </div>
 </div>
+           )}
 
-            <div className="flex flex-col sm:flex-row gap-3 max-w-sm">
+            <div className="w-full flex flex-col sm:flex-row gap-3 max-w-sm">
               <button
                 onClick={handleAddToCart}
                 disabled={selectedVariant ? !selectedVariant.available : false}
@@ -251,7 +257,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
             </div>
 
             {quickBuyOpen && (
-              <div className="max-w-sm mt-2">
+              <div className="w-full max-w-sm mt-2">
                 {orderPlaced ? (
                   <div className="border border-white/20 p-6 flex flex-col gap-3 items-center text-center">
                     <p className="text-sm font-medium text-white">Order placed — thank you!</p>
@@ -271,8 +277,8 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                   </div>
                 ) : !user ? (
                   <div className="border border-white/20 p-6 flex flex-col gap-3">
-                    <p className="text-sm text-white/70 text-center">
-                      Please log in to complete your purchase
+                    <p className="text-sm text-white text-center uppercase tracking-tight">
+                      Please log in to quick buy
                     </p>
                     <Link 
                       href="/signup"

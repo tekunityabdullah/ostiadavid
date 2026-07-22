@@ -25,7 +25,8 @@ export default function CartPage() {
     checkAuth();
   }, []);
 
-  const shipping = subtotal > 0 ? 8.0 : 0;
+  const requiresShipping = items.some((item) => !item.isDigital);
+  const shipping = requiresShipping && subtotal > 0 ? 8.0 : 0;
   const total = subtotal + shipping;
 
   return (
@@ -63,7 +64,7 @@ export default function CartPage() {
                       <img
                         src={item.image}
                         alt={item.name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain"
                       />
                     </div>
 
@@ -162,7 +163,7 @@ export default function CartPage() {
                     </div>
                     <div className="flex justify-between text-sm text-white/70">
                       <span>Shipping</span>
-                      <span>{formatPrice(8.0)}</span>
+                      <span>{formatPrice(shipping)}</span>
                     </div>
 
                     <div className="border-t border-white/10 pt-4 flex justify-between text-base font-medium text-white">
@@ -171,7 +172,7 @@ export default function CartPage() {
                     </div>
 
                     <div className="flex flex-col gap-3 mt-4">
-                      <p className="text-sm text-white/70 text-center">
+                      <p className="text-sm text-white/70 text-center uppercase tracking-tight">
                         Please create an account to complete your purchase
                       </p>
                       <Link

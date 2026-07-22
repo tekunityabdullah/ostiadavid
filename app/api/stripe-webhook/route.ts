@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createServiceClient } from "@/lib/supabase/server";
+import { sendDigitalDownloadEmail } from "@/lib/digital-delivery";
 
 function getStripe() {
   return new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -47,6 +48,7 @@ export async function POST(request: Request) {
             name: string;
             price: number;
             quantity: number;
+            isDigital?: boolean;
           }>;
 
           const total = (session.amount_total ?? 0) / 100;
@@ -74,6 +76,9 @@ export async function POST(request: Request) {
               }))
             );
           }
+
+          const recipientEmail = session.customer_details?.email ?? session.customer_email;
+          await sendDigitalDownloadEmail(recipientEmail, cartItems);
         }
         break;
       }

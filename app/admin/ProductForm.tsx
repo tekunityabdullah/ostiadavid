@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Plus } from "lucide-react";
 import { addProduct, type ProductFormState } from "./actions";
 
@@ -11,6 +11,7 @@ const initialState: ProductFormState = {
 
 export default function ProductForm() {
   const [state, formAction, pending] = useActionState(addProduct, initialState);
+  const [isDigital, setIsDigital] = useState(false);
 
   return (
     <form action={formAction} className="grid gap-5">
@@ -83,6 +84,35 @@ export default function ProductForm() {
         />
         Exclusive product
       </label>
+
+      <label className="flex items-center gap-3 text-sm uppercase tracking-tight text-white">
+        <input
+          name="is_digital"
+          type="checkbox"
+          className="size-4 accent-white"
+          checked={isDigital}
+          onChange={(e) => setIsDigital(e.target.checked)}
+        />
+        Digital download
+      </label>
+
+      {isDigital && (
+        <div className="grid gap-2">
+          <label className="text-xs uppercase tracking-[0.18em] text-white/50">
+            Digital file (WAV)
+          </label>
+          <input
+            name="digital_file"
+            type="file"
+            accept=".wav,audio/wav"
+            required={isDigital}
+            className="h-11 border border-white/20 bg-black px-3 py-2 text-sm text-white outline-none file:mr-3 file:border-0 file:bg-white file:px-3 file:py-1.5 file:text-xs file:uppercase file:tracking-tight file:text-black focus:border-white"
+          />
+          <p className="text-xs text-white/40">
+            Sent to buyers as a secure download link by email after purchase. Not fulfilled through Printful.
+          </p>
+        </div>
+      )}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <button

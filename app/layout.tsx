@@ -14,7 +14,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full antialiased">
-      <body className="min-h-screen flex flex-col bg-black text-white font-sans antialiased">
+      <body
+        className="min-h-screen flex flex-col bg-black text-white font-sans antialiased"
+        suppressHydrationWarning
+      >
         <CartProvider>{children}</CartProvider>
       </body>
     </html>

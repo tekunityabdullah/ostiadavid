@@ -26,7 +26,7 @@ export default function Header() {
       <Link href="/">
         <Image
           className="h-12 sm:h-18 w-auto"
-          src="https://staging.internalstaging.com/custom/ositadavid/logo.png"
+          src="/logo.png"
           alt="Osita David"
           width={200}
           height={90}

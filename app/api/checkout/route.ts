@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import { createClient } from "@/lib/supabase/server";
 import type { CartItem, ShippingAddress } from "@/lib/types";
 import { printfulAPI } from "@/lib/printful";
+import { sendDigitalDownloadEmail } from "@/lib/digital-delivery";
 
 function getStripe() {
   return new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -102,7 +103,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
     }
 
-    if (paymentMethodId && !isValidShippingAddress(shippingAddress)) {
+    const requiresShipping = items.some((item) => !item.isDigital);
+
+    if (paymentMethodId && requiresShipping && !isValidShippingAddress(shippingAddress)) {
       return NextResponse.json(
         { error: "A complete shipping address is required" },
         { status: 400 }
@@ -118,7 +121,7 @@ export async function POST(request: Request) {
 
     // Calculate total amount in cents
     const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const shipping = 8.0;
+    const shipping = requiresShipping ? 8.0 : 0;
     const total = (subtotal + shipping) * 100; // Convert to cents
 
     // Create or get customer
@@ -163,6 +166,7 @@ export async function POST(request: Request) {
         name: i.name,
         price: i.price,
         quantity: i.quantity,
+        isDigital: i.isDigital ?? false,
       }))
     ),
   },
@@ -171,6 +175,7 @@ export async function POST(request: Request) {
       if (paymentIntent.status === "succeeded") {
         // Check if any items are Printful products and create order
         await createPrintfulOrderIfNeeded(items, user, shippingAddress as ShippingAddress);
+        await sendDigitalDownloadEmail(user?.email, items);
 
         return NextResponse.json({ success: true });
       } else {
@@ -192,14 +197,16 @@ export async function POST(request: Request) {
         })
       );
 
-      lineItems.push({
-        price_data: {
-          currency: "usd",
-          product_data: { name: "Shipping" },
-          unit_amount: 800,
-        },
-        quantity: 1,
-      });
+      if (requiresShipping) {
+        lineItems.push({
+          price_data: {
+            currency: "usd",
+            product_data: { name: "Shipping" },
+            unit_amount: 800,
+          },
+          quantity: 1,
+        });
+      }
 
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
@@ -218,6 +225,7 @@ export async function POST(request: Request) {
               name: i.name,
               price: i.price,
               quantity: i.quantity,
+              isDigital: i.isDigital ?? false,
             }))
           ),
         },
