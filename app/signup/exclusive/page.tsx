@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
+import BackgroundClipVideo from "../../components/BackgroundClipVideo";
 import { createClient } from "@/lib/supabase/client";
 import { loadStripe, Stripe } from "@stripe/stripe-js";
 import {
@@ -196,72 +197,13 @@ function SignupForm() {
 }
 
 export default function ExclusiveSignupPage() {
-  const desktopVideoRef = useRef<HTMLVideoElement>(null);
-  const mobileVideoRef = useRef<HTMLVideoElement>(null);
-
-  useEffect(() => {
-    const playVideo = async (video: HTMLVideoElement | null) => {
-      if (!video) return;
-
-      video.muted = true;
-      video.defaultMuted = true;
-      video.loop = true;
-      video.playsInline = true;
-      video.autoplay = true;
-
-      try {
-        await video.play();
-      } catch {
-        // Browser blocked autoplay.
-        // Nothing else can force autoplay if the browser refuses.
-      }
-    };
-
-    playVideo(desktopVideoRef.current);
-    playVideo(mobileVideoRef.current);
-
-    document.addEventListener("visibilitychange", () => {
-      if (!document.hidden) {
-        playVideo(desktopVideoRef.current);
-        playVideo(mobileVideoRef.current);
-      }
-    });
-  }, []);
   return (
     <section className="relative min-h-[100svh] w-full overflow-hidden">
-      {/* DESKTOP VIDEO */}
-      <video
-        ref={desktopVideoRef}
-        autoPlay
-        muted
-        loop
-        playsInline
-        preload="auto"
-        disablePictureInPicture
-        controls={false}
-        controlsList="nodownload nofullscreen noremoteplayback"
-        poster="/poster.jpg"
-        className="hidden sm:block absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
-      >
-        <source src="/exclusive-looped-clip-desktop.mp4" type="video/mp4" />
-      </video>
-
-      {/* MOBILE VIDEO */}
-      <video
-        ref={mobileVideoRef}
-        autoPlay
-        muted
-        loop
-        playsInline
-        preload="auto"
-        disablePictureInPicture
-        controls={false}
-        controlsList="nodownload nofullscreen noremoteplayback"
-        poster="/poster.jpg"
-        className="sm:hidden absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
-      >
-        <source src="/exclusive-looped-clip-mobile.mp4" type="video/mp4" />
-      </video>
+      <BackgroundClipVideo
+        desktopSrc="/exclusive-looped-clip-desktop.mp4"
+        mobileSrc="/exclusive-looped-clip-mobile.mp4"
+        className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+      />
 
       {/* DARK OVERLAY */}
       <div className="absolute inset-0 bg-black/10" />

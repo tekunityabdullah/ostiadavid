@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed:unreleased": "node scripts/seed-unreleased-media.mjs"
   },
   "dependencies": {
     "@stripe/react-stripe-js": "^6.6.0",

@@ -70,3 +70,32 @@ export interface OrderItem {
 
 export const EXCLUSIVE_STRIPE_LINK =
   "https://buy.stripe.com/8x29ASejAfF44K20uLbII00";
+
+export type MediaType = "audio" | "video";
+
+export interface UnreleasedMedia {
+  id: string;
+  title: string;
+  media_type: MediaType;
+  description: string | null;
+  cover_image: string | null;
+  file_path: string;
+  duration_seconds: number | null;
+  play_count: number;
+  album_id: string | null;
+  track_number: number | null;
+  created_at: string;
+}
+
+// Metadata sent to the browser — deliberately omits `file_path` so the
+// storage path never reaches the client. Playback goes through
+// /api/unreleased/stream, which resolves the path server-side.
+export type UnreleasedMediaSummary = Omit<UnreleasedMedia, "file_path">;
+
+export interface UnreleasedAlbum {
+  id: string;
+  title: string;
+  description: string | null;
+  cover_image: string | null;
+  created_at: string;
+}

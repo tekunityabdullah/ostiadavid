@@ -1,35 +1,48 @@
 "use client";
 
+import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import ProductCard from "../components/ProductCard";
 import type { Product } from "@/lib/types";
 import { deleteProduct } from "./actions";
+import { AdminButton } from "./ui";
 
 interface AdminProductTileProps {
   product: Product;
+  onDeleted?: () => void;
 }
 
-export default function AdminProductTile({ product }: AdminProductTileProps) {
+export default function AdminProductTile({ product, onDeleted }: AdminProductTileProps) {
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!window.confirm(`Delete "${product.name}"?`)) return;
+
+    setDeleting(true);
+    const formData = new FormData();
+    formData.set("product_id", product.id);
+
+    try {
+      await deleteProduct(formData);
+      onDeleted?.();
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-3 border border-white/10 bg-white/[0.02] p-3 transition hover:border-white/20">
       <ProductCard product={product} />
-      <form
-        action={deleteProduct}
-        onSubmit={(event) => {
-          if (!window.confirm(`Delete "${product.name}"?`)) {
-            event.preventDefault();
-          }
-        }}
+      <AdminButton
+        type="button"
+        variant="danger"
+        onClick={handleDelete}
+        disabled={deleting}
+        className="w-full"
       >
-        <input type="hidden" name="product_id" value={product.id} />
-        <button
-          type="submit"
-          className="inline-flex h-10 w-full items-center justify-center gap-2 border border-red-300/35 bg-black px-3 text-xs font-medium uppercase tracking-tight text-red-200 transition hover:border-red-200 hover:bg-red-950/30"
-        >
-          <Trash2 size={14} />
-          Delete
-        </button>
-      </form>
+        <Trash2 size={14} />
+        {deleting ? "Deleting..." : "Delete"}
+      </AdminButton>
     </div>
   );
 }

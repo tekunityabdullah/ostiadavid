@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Footer from "../components/Footer";
+import BackgroundClipVideo from "../components/BackgroundClipVideo";
 import { Eye, EyeOff } from "lucide-react";
 
 
@@ -45,31 +46,11 @@ export default function Page() {
 
   return (
     <section className="relative min-h-[100svh] w-full overflow-hidden">
-      {/* DESKTOP VIDEO */}
-      <video
-        autoPlay
-        muted
-        loop
-        playsInline
-        preload="auto"
-        poster="/poster.jpg"
-        className="hidden sm:block absolute inset-0 w-full h-full object-cover"
-      >
-        <source src="/exclusive-looped-clip-desktop.mp4" type="video/mp4" />
-      </video>
-
-      {/* MOBILE VIDEO */}
-      <video
-        autoPlay
-        muted
-        loop
-        playsInline
-        preload="auto"
-        poster="/poster.jpg"
-        className="sm:hidden absolute inset-0 w-full h-full object-cover"
-      >
-        <source src="/exclusive-looped-clip-mobile.mp4" type="video/mp4" />
-      </video>
+      <BackgroundClipVideo
+        desktopSrc="/exclusive-looped-clip-desktop.mp4"
+        mobileSrc="/exclusive-looped-clip-mobile.mp4"
+        className="absolute inset-0 w-full h-full object-cover"
+      />
 
       {/* DARK OVERLAY */}
       <div className="absolute inset-0 bg-black/10" />
