@@ -81,7 +81,7 @@ export default function AdminProductsPage() {
           ) : products.length === 0 ? (
             <p className="py-12 text-sm uppercase tracking-tight text-white/50">No products yet.</p>
           ) : (
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
               {products.map((product) => (
                 <AdminProductTile key={product.id} product={product} onDeleted={loadProducts} />
               ))}

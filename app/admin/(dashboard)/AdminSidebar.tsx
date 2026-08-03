@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  CalendarDays,
   Disc3,
   ExternalLink,
   LayoutDashboard,
@@ -17,6 +18,7 @@ const NAV_ITEMS = [
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/unreleased", label: "Unreleased", icon: Music },
   { href: "/admin/albums", label: "Albums", icon: Disc3 },
+  { href: "/admin/events", label: "Events", icon: CalendarDays },
 ];
 
 function isActivePath(pathname: string, href: string) {

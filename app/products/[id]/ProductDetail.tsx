@@ -287,7 +287,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                       CREATE ACCOUNT
                     </Link>
                     <Link
-                      href="/login"
+                      href="/signup"
                       className="text-center text-xs uppercase tracking-tight text-white/50 hover:text-white transition-colors no-underline"
                     >
                       Already have an account? Log in

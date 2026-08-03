@@ -56,7 +56,7 @@ export default function AdminUnreleasedPage() {
               No unreleased media yet.
             </p>
           ) : (
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
               {unreleasedMedia.map((media) => (
                 <AdminUnreleasedTile
                   key={media.id}

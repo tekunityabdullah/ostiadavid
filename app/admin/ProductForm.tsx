@@ -109,7 +109,7 @@ export default function ProductForm({ onSuccess }: ProductFormProps) {
       </div>
 
       <Field label="Product image">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {imagePreview && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={imagePreview} alt="" className="h-11 w-11 shrink-0 object-cover" />

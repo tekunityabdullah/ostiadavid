@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStreamUrl } from "@/lib/unreleased";
+import { getAccountType, isAdmin } from "@/lib/auth";
 
-// Unreleased is a fully public section — no login or exclusive membership
-// required. Streaming still goes through short-lived signed URLs rather
-// than a stable public file URL, so links can't be trivially shared/cached.
+// Unreleased lives behind the Exclusive page — only exclusive members (or
+// admins) can resolve a streaming URL. RLS on unreleased_media backs this
+// up independently, but this check gives a clean 403 instead of a bare 404.
 export async function POST(request: NextRequest) {
+  const accountType = await getAccountType();
+  if (accountType !== "exclusive" && !(await isAdmin())) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const body = await request.json().catch(() => null);
   const id = typeof body?.id === "string" ? body.id : "";
 

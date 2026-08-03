@@ -264,3 +264,67 @@ export async function deleteAlbum(formData: FormData) {
   revalidatePath("/unreleased/albums");
   revalidatePath("/admin");
 }
+
+export async function addEvent(
+  _prevState: ProductFormState,
+  formData: FormData
+): Promise<ProductFormState> {
+  if (!(await isAdmin())) {
+    redirect("/admin/login");
+  }
+
+  const title = String(formData.get("title") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+  const eventDate = String(formData.get("event_date") ?? "").trim();
+  const eventTime = String(formData.get("event_time") ?? "").trim();
+  const location = String(formData.get("location") ?? "").trim();
+  const ticketUrl = String(formData.get("ticket_url") ?? "").trim();
+  const coverImage = String(formData.get("cover_image_url") ?? "").trim() || null;
+
+  if (!title || !eventDate) {
+    return { ok: false, message: "Title and date are required." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("events").insert({
+    title,
+    description: description || null,
+    event_date: eventDate,
+    event_time: eventTime || null,
+    location: location || null,
+    ticket_url: ticketUrl || null,
+    cover_image: coverImage,
+  });
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+
+  revalidatePath("/exclusive");
+  revalidatePath("/admin");
+
+  return { ok: true, message: "Event added." };
+}
+
+export async function deleteEvent(formData: FormData) {
+  if (!(await isAdmin())) {
+    redirect("/admin/login");
+  }
+
+  const eventId = String(formData.get("event_id") ?? "").trim();
+
+  if (!eventId) {
+    return;
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("events").delete().eq("id", eventId);
+
+  if (error) {
+    console.error("Failed to delete event:", error.message);
+    return;
+  }
+
+  revalidatePath("/exclusive");
+  revalidatePath("/admin");
+}

@@ -143,7 +143,7 @@ export default function UnreleasedMediaForm({ onSuccess, albums }: UnreleasedMed
       )}
 
       <Field label="Cover image">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {coverPreview && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={coverPreview} alt="" className="h-11 w-11 shrink-0 object-cover" />

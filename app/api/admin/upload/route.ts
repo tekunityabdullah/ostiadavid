@@ -16,6 +16,7 @@ const ALLOWED_BUCKETS = new Set([
   "unreleased-covers",
   "digital-downloads",
   "product-images",
+  "event-covers",
 ]);
 
 export async function POST(request: NextRequest) {

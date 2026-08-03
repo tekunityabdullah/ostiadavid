@@ -57,13 +57,19 @@ export default function Page() {
 
       {/* CONTENT */}
       <div className="relative z-20 min-h-[100svh] flex flex-col">
-        {/* SIGN UP - TOP OF SCREEN */}
-        <div className="pt-8 px-6 text-center">
+        {/* SIGN UP / EXIT - TOP OF SCREEN */}
+        <div className="pt-8 px-6 flex items-center justify-center gap-6">
           <a
             href="/signup/exclusive"
-            className="text-[10px] font-light text-white uppercase transition-colors"
+            className="text-[10px] font-light text-white uppercase transition-colors hover:opacity-70"
           >
             JOIN
+          </a>
+          <a
+            href="/"
+            className="text-[10px] font-light text-white uppercase transition-colors hover:opacity-70"
+          >
+            EXIT
           </a>
         </div>
 

@@ -1,8 +1,10 @@
 import Header from "../components/Header";
 import SubNav from "../components/SubNav";
 import Footer from "../components/Footer";
-import ProductCard from "../components/ProductCard";
+import ExclusiveTabs from "./ExclusiveTabs";
 import { getExclusiveProducts } from "@/lib/products";
+import { getUnreleasedMedia } from "@/lib/unreleased";
+import { getEvents } from "@/lib/events";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -35,7 +37,7 @@ export default async function ExclusivePage() {
               Exclusive Access Required
             </h1>
             <p className="text-sm text-white/70 mb-8">
-              You need an exclusive membership to access members-only drops.
+              You need an exclusive membership to access members-only drops, unreleased media, and events.
             </p>
             <Link
               href="/signup/exclusive"
@@ -51,7 +53,11 @@ export default async function ExclusivePage() {
     );
   }
 
-  const products = await getExclusiveProducts();
+  const [products, media, events] = await Promise.all([
+    getExclusiveProducts(),
+    getUnreleasedMedia(),
+    getEvents(),
+  ]);
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
@@ -60,24 +66,11 @@ export default async function ExclusivePage() {
 
       <main className="pt-32 flex justify-center w-full max-w-[1400px] mx-auto flex-1">
         <section className="flex flex-col items-center px-4 pt-6 pb-8 w-full">
-          <h1 className="text-2xl md:text-4xl lg:text-5xl font-medium uppercase tracking-wide text-white mb-2 text-center">
+          <h1 className="text-2xl md:text-4xl lg:text-5xl font-medium uppercase tracking-wide text-white mb-10 text-center">
             Exclusive
           </h1>
-          <p className="text-xs text-white/50 uppercase tracking-tight mb-10 text-center">
-            Members-only drops
-          </p>
 
-          {products.length === 0 ? (
-            <p className="text-sm text-white/50 uppercase tracking-tight py-12">
-              No exclusive drops available yet.
-            </p>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full px-3 md:px-[60px]">
-              {products.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          )}
+          <ExclusiveTabs products={products} media={media} events={events} />
         </section>
       </main>
 

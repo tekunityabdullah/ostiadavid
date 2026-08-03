@@ -6,7 +6,8 @@ export async function proxy(request: NextRequest) {
   const supabaseResponse = await updateSession(request);
 
   const { pathname } = request.nextUrl;
-  const isExclusiveRoute = pathname.startsWith("/exclusive");
+  const isExclusiveRoute =
+    pathname.startsWith("/exclusive") || pathname.startsWith("/unreleased");
   const isAdminRoute =
     (pathname.startsWith("/admin") && pathname !== "/admin/login") ||
     pathname.startsWith("/api/admin");

@@ -19,11 +19,6 @@ export default function SubNav({ activePage }: SubNavProps) {
           EXCLUSIVE
         </Link>
 
-        {/* UNRELEASED */}
-        <Link href="/unreleased" className="uppercase tracking-tight font-medium text-white hover:opacity-70 transition">
-          UNRELEASED
-        </Link>
-
         {/* TOUR */}
         <Link href="/tour" className="uppercase tracking-tight font-medium text-white hover:opacity-70 transition">
           TOUR

@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { Plus } from "lucide-react";
-import { addAlbum, type ProductFormState } from "./actions";
+import { addEvent, type ProductFormState } from "./actions";
 import { AdminButton, Field, fileInputClass, inputClass, textareaClass } from "./ui";
 import { uploadAdminFile } from "./uploadFile";
 
@@ -11,12 +11,12 @@ const initialState: ProductFormState = {
   message: "",
 };
 
-interface AlbumFormProps {
+interface EventFormProps {
   onSuccess?: () => void;
 }
 
-export default function AlbumForm({ onSuccess }: AlbumFormProps) {
-  const [state, dispatch, pending] = useActionState(addAlbum, initialState);
+export default function EventForm({ onSuccess }: EventFormProps) {
+  const [state, dispatch, pending] = useActionState(addEvent, initialState);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -47,7 +47,7 @@ export default function AlbumForm({ onSuccess }: AlbumFormProps) {
       let coverUrlString = typeof coverUrl === "string" ? coverUrl.trim() : "";
 
       if (coverFile) {
-        const upload = await uploadAdminFile("unreleased-covers", coverFile);
+        const upload = await uploadAdminFile("event-covers", coverFile);
         coverUrlString = upload.publicUrl;
       }
 
@@ -67,8 +67,26 @@ export default function AlbumForm({ onSuccess }: AlbumFormProps) {
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="grid gap-5">
-      <Field label="Album title">
+      <Field label="Event title">
         <input name="title" required className={inputClass} />
+      </Field>
+
+      <div className="grid gap-5 sm:grid-cols-2">
+        <Field label="Date">
+          <input name="event_date" type="date" required className={inputClass} />
+        </Field>
+
+        <Field label="Time (optional)">
+          <input name="event_time" placeholder="8:00 PM" className={inputClass} />
+        </Field>
+      </div>
+
+      <Field label="Location (optional)">
+        <input name="location" placeholder="Venue, City" className={inputClass} />
+      </Field>
+
+      <Field label="Ticket URL (optional)">
+        <input name="ticket_url" type="url" placeholder="https://..." className={inputClass} />
       </Field>
 
       <Field label="Cover image">
@@ -105,7 +123,7 @@ export default function AlbumForm({ onSuccess }: AlbumFormProps) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <AdminButton type="submit" disabled={busy}>
           <Plus size={16} />
-          {uploading ? "Uploading..." : pending ? "Saving..." : "Add album"}
+          {uploading ? "Uploading..." : pending ? "Saving..." : "Add event"}
         </AdminButton>
 
         {(uploadError || state.message) && (

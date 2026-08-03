@@ -210,13 +210,19 @@ export default function ExclusiveSignupPage() {
 
       {/* CONTENT */}
       <div className="relative z-20 min-h-[100svh] flex flex-col">
-        {/* LOGIN LINK - TOP CENTER */}
-        <div className="pt-8 px-6 text-center">
+        {/* LOGIN / EXIT LINKS - TOP CENTER */}
+        <div className="pt-8 px-6 flex items-center justify-center gap-6">
           <Link
             href="/login"
-            className="text-white uppercase text-[10px] font-light transition-colors"
+            className="text-white uppercase text-[10px] font-light transition-colors hover:opacity-70"
           >
             LOG IN
+          </Link>
+          <Link
+            href="/"
+            className="text-white uppercase text-[10px] font-light transition-colors hover:opacity-70"
+          >
+            EXIT
           </Link>
         </div>
 

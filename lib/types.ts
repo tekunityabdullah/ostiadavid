@@ -99,3 +99,15 @@ export interface UnreleasedAlbum {
   cover_image: string | null;
   created_at: string;
 }
+
+export interface EventItem {
+  id: string;
+  title: string;
+  description: string | null;
+  event_date: string;
+  event_time: string | null;
+  location: string | null;
+  cover_image: string | null;
+  ticket_url: string | null;
+  created_at: string;
+}
