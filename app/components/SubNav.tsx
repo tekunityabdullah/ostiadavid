@@ -11,7 +11,7 @@ export default function SubNav({ activePage }: SubNavProps) {
   const [openCollections, setOpenCollections] = useState(false);
 
   return (
-    <div className="fixed top-[56px] sm:top-[68px] left-0 w-full z-[90] bg-black flex justify-start sm:justify-center py-3 sm:py-4 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div className="fixed top-[56px] sm:top-[68px] left-0 w-full z-[90] bg-black flex justify-center py-3 sm:py-4 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       <nav className="flex gap-6 sm:gap-14 md:gap-20 lg:gap-28 px-6 sm:px-10 py-3 items-center text-[11px] whitespace-nowrap">
 
         {/* EXCLUSIVE */}
