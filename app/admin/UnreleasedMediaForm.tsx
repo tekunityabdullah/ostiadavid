@@ -12,6 +12,8 @@ const initialState: ProductFormState = {
   message: "",
 };
 
+type MediaType = "audio" | "video" | "image";
+
 interface UnreleasedMediaFormProps {
   onSuccess?: () => void;
   albums: UnreleasedAlbum[];
@@ -38,7 +40,7 @@ function readDuration(file: File, mediaType: "audio" | "video"): Promise<number 
 
 export default function UnreleasedMediaForm({ onSuccess, albums }: UnreleasedMediaFormProps) {
   const [state, dispatch, pending] = useActionState(addUnreleasedMedia, initialState);
-  const [mediaType, setMediaType] = useState<"audio" | "video">("audio");
+  const [mediaType, setMediaType] = useState<MediaType>("audio");
   const [duration, setDuration] = useState<number | null>(null);
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
@@ -108,11 +110,12 @@ export default function UnreleasedMediaForm({ onSuccess, albums }: UnreleasedMed
         <select
           name="media_type"
           value={mediaType}
-          onChange={(e) => setMediaType(e.target.value as "audio" | "video")}
+          onChange={(e) => setMediaType(e.target.value as MediaType)}
           className={inputClass}
         >
           <option value="audio">Audio</option>
           <option value="video">Video</option>
+          <option value="image">Image</option>
         </select>
       </Field>
 
@@ -174,7 +177,9 @@ export default function UnreleasedMediaForm({ onSuccess, albums }: UnreleasedMed
       </Field>
 
       <Field
-        label={mediaType === "audio" ? "Audio file" : "Video file"}
+        label={
+          mediaType === "audio" ? "Audio file" : mediaType === "video" ? "Video file" : "Image file"
+        }
         hint={
           <>
             Stored privately and streamed on-site only — never offered as a download.
@@ -186,13 +191,17 @@ export default function UnreleasedMediaForm({ onSuccess, albums }: UnreleasedMed
         <input
           name="media_file"
           type="file"
-          accept={mediaType === "audio" ? "audio/*" : "video/*"}
+          accept={
+            mediaType === "audio" ? "audio/*" : mediaType === "video" ? "video/*" : "image/*"
+          }
           required
           onChange={(e) => {
             const file = e.target.files?.[0] ?? null;
             setMediaFile(file);
             setDuration(null);
-            if (file) readDuration(file, mediaType).then(setDuration);
+            if (file && mediaType !== "image") {
+              readDuration(file, mediaType).then(setDuration);
+            }
           }}
           className={fileInputClass}
         />

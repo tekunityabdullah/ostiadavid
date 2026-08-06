@@ -12,15 +12,17 @@ interface VideoGridProps {
   likedIds: Set<string>;
   onToggleLike: (id: string) => void;
   onRemove?: (id: string) => void;
+  /** Force a plain 2-column grid (used under the video detail's "more videos" strip) instead of the default responsive 1→4 column layout. */
+  twoColumn?: boolean;
 }
 
-export default function VideoGrid({ videos, likedIds, onToggleLike, onRemove }: VideoGridProps) {
+export default function VideoGrid({ videos, likedIds, onToggleLike, onRemove, twoColumn }: VideoGridProps) {
   const router = useRouter();
 
   if (!videos.length) return null;
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+    <div className={`grid gap-4 ${twoColumn ? "grid-cols-2" : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"}`}>
       {videos.map((video) => {
         const isLiked = likedIds.has(video.id);
         const openDetail = () => router.push(`/unreleased/${video.id}`);

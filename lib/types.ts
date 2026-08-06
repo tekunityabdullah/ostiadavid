@@ -71,7 +71,7 @@ export interface OrderItem {
 export const EXCLUSIVE_STRIPE_LINK =
   "https://buy.stripe.com/8x29ASejAfF44K20uLbII00";
 
-export type MediaType = "audio" | "video";
+export type MediaType = "audio" | "video" | "image";
 
 export interface UnreleasedMedia {
   id: string;

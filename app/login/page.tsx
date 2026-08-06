@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { getPostLoginRedirect } from "@/lib/getPostLoginRedirect";
 import Footer from "../components/Footer";
 import BackgroundClipVideo from "../components/BackgroundClipVideo";
 import { Eye, EyeOff } from "lucide-react";
@@ -40,7 +41,7 @@ export default function Page() {
       return;
     }
 
-    router.push("/");
+    router.push(await getPostLoginRedirect(supabase));
     router.refresh();
   }
 

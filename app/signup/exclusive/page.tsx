@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import BackgroundClipVideo from "../../components/BackgroundClipVideo";
@@ -19,7 +20,13 @@ const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
 );
 
+interface ExistingAccount {
+  id: string;
+  email: string;
+}
+
 function SignupForm() {
+  const router = useRouter();
   const stripe = useStripe();
   const elements = useElements();
   const [email, setEmail] = useState("");
@@ -31,13 +38,35 @@ function SignupForm() {
   const [error, setError] = useState("");
   const [stripeError, setStripeError] = useState("");
 
-  // Check if Stripe is loaded
-  React.useEffect(() => {
+  // If someone's already logged in (e.g. clicked "Upgrade to Exclusive"
+  // from their profile), this is an upgrade of their existing account, not
+  // a brand new signup — skip email/password and never call signUp()
+  // again, since that would just fail on an already-registered email.
+  const [existingAccount, setExistingAccount] = useState<ExistingAccount | null>(null);
+  const [checkingSession, setCheckingSession] = useState(true);
+
+  useEffect(() => {
     if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
       setStripeError(
         "STRIPE KEY NOT CONFIGURED. PLEASE ADD NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY TO .ENV",
       );
     }
+  }, []);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (user) {
+        setExistingAccount({ id: user.id, email: user.email ?? "" });
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", user.id)
+          .single();
+        if (profile?.full_name) setFullName(profile.full_name);
+      }
+      setCheckingSession(false);
+    });
   }, []);
 
   async function handleSignup(e: React.FormEvent) {
@@ -52,20 +81,32 @@ function SignupForm() {
     }
 
     const supabase = createClient();
-    const normalizedEmail = email.trim().toLowerCase();
 
-    const { data, error: authError } = await supabase.auth.signUp({
-      email: normalizedEmail,
-      password,
-      options: {
-        data: { full_name: fullName },
-      },
-    });
+    let checkoutEmail: string;
+    let checkoutUserId: string;
 
-    if (authError) {
-      setError(authError.message);
-      setLoading(false);
-      return;
+    if (existingAccount) {
+      // Upgrading an existing account — no new auth user, no new password.
+      checkoutEmail = existingAccount.email;
+      checkoutUserId = existingAccount.id;
+    } else {
+      const normalizedEmail = email.trim().toLowerCase();
+      const { data, error: authError } = await supabase.auth.signUp({
+        email: normalizedEmail,
+        password,
+        options: {
+          data: { full_name: fullName },
+        },
+      });
+
+      if (authError) {
+        setError(authError.message);
+        setLoading(false);
+        return;
+      }
+
+      checkoutEmail = normalizedEmail;
+      checkoutUserId = data.user?.id ?? "";
     }
 
     const cardElement = elements.getElement(CardElement);
@@ -81,7 +122,7 @@ function SignupForm() {
         card: cardElement,
         billing_details: {
           name: fullName,
-          email: normalizedEmail,
+          email: checkoutEmail,
           address: {
             postal_code: zipCode,
           },
@@ -98,8 +139,8 @@ function SignupForm() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        email: normalizedEmail,
-        userId: data.user?.id ?? "",
+        email: checkoutEmail,
+        userId: checkoutUserId,
         paymentMethodId: paymentMethod.id,
       }),
     });
@@ -115,11 +156,27 @@ function SignupForm() {
       return;
     }
 
-    window.location.href = "/login?exclusive=success";
+    if (existingAccount) {
+      // Already logged in — no need to log in again.
+      router.push("/exclusive");
+      router.refresh();
+    } else {
+      window.location.href = "/login?exclusive=success";
+    }
+  }
+
+  if (checkingSession) {
+    return null;
   }
 
   return (
     <form onSubmit={handleSignup} className="flex flex-col items-center gap-1">
+      {existingAccount && (
+        <p className="mb-3 text-center text-[10px] uppercase tracking-tight text-white/50">
+          Upgrading {existingAccount.email}
+        </p>
+      )}
+
       <input
         type="text"
         placeholder="FULL NAME"
@@ -127,34 +184,39 @@ function SignupForm() {
         onChange={(e) => setFullName(e.target.value)}
         className="w-full px-4 py-2 bg-transparent text-white text-[10px] outline-none text-center placeholder:text-white/40 placeholder:text-[10px]"
       />
-      <input
-        type="email"
-        placeholder="EMAIL"
-        required
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        className="w-full px-4 py-2 bg-transparent text-white text-[10px] outline-none text-center placeholder:text-white/40 placeholder:text-[10px]"
-      />
-      <div className="relative w-full">
-        <input
-          type={showPassword ? "text" : "password"}
-          placeholder="CREATE PASSWORD"
-          required
-          minLength={6}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full pl-10 pr-10 py-2 bg-transparent text-white text-[10px] outline-none text-center placeholder:text-white/40 placeholder:text-[10px]"
-        />
 
-        <button
-          type="button"
-          onClick={() => setShowPassword((prev) => !prev)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 z-10 text-white/70 hover:text-white"
-          aria-label={showPassword ? "Hide password" : "Show password"}
-        >
-          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-        </button>
-      </div>
+      {!existingAccount && (
+        <>
+          <input
+            type="email"
+            placeholder="EMAIL"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full px-4 py-2 bg-transparent text-white text-[10px] outline-none text-center placeholder:text-white/40 placeholder:text-[10px]"
+          />
+          <div className="relative w-full">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="CREATE PASSWORD"
+              required
+              minLength={6}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full pl-10 pr-10 py-2 bg-transparent text-white text-[10px] outline-none text-center placeholder:text-white/40 placeholder:text-[10px]"
+            />
+
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 z-10 text-white/70 hover:text-white"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
+        </>
+      )}
 
       <div className="w-full px-4 py-2 bg-transparent text-white text-[10px] outline-none text-center">
         {stripeError ? (

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2, Music, Video } from "lucide-react";
+import { Trash2, Music, Video, ImageIcon } from "lucide-react";
 import type { UnreleasedMediaSummary } from "@/lib/types";
 import { deleteUnreleasedMedia } from "./actions";
 import { AdminButton } from "./ui";
@@ -41,8 +41,10 @@ export default function AdminUnreleasedTile({ media, onDeleted }: AdminUnrelease
           />
         ) : media.media_type === "audio" ? (
           <Music size={32} className="text-white/30" />
-        ) : (
+        ) : media.media_type === "video" ? (
           <Video size={32} className="text-white/30" />
+        ) : (
+          <ImageIcon size={32} className="text-white/30" />
         )}
       </div>
 

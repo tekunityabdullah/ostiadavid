@@ -39,9 +39,12 @@ export default async function UnreleasedDetailPage({ params }: DetailPageProps) 
     .filter((m) => m.id !== item.id && m.media_type === item.media_type)
     .slice(0, 6);
 
-  // Resolved server-side so the video can start fetching immediately on
-  // page load instead of waiting on a client round-trip after mount.
-  const initialStream = item.media_type === "video" ? await getStreamUrl(item.id) : null;
+  // Resolved server-side so the video/image can start fetching immediately
+  // on page load instead of waiting on a client round-trip after mount.
+  const initialStream =
+    item.media_type === "video" || item.media_type === "image"
+      ? await getStreamUrl(item.id)
+      : null;
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">

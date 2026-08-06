@@ -1,60 +1,61 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Disc3, ListMusic, Search } from "lucide-react";
+import { Disc3, Heart, ListMusic, Search } from "lucide-react";
 import type { UnreleasedMediaSummary } from "@/lib/types";
-import AudioTrackList from "./AudioTrackList";
+import MusicGrid from "./MusicGrid";
 import VideoGrid from "./VideoGrid";
+import ImageGrid from "./ImageGrid";
 import { useLikedMedia } from "./useLikedMedia";
-import { getRecentlyPlayedIds } from "./recentlyPlayed";
 
-type Filter = "all" | "audio" | "video" | "liked";
+type Tab = "videos" | "music" | "images";
 
 export default function MediaLibrary({ media }: { media: UnreleasedMediaSummary[] }) {
-  const [filter, setFilter] = useState<Filter>("all");
+  const [tab, setTab] = useState<Tab>("music");
+  const [showLikedOnly, setShowLikedOnly] = useState(false);
   const [query, setQuery] = useState("");
   const { liked, toggleLike } = useLikedMedia();
-  const [recentIds, setRecentIds] = useState<string[]>([]);
-
-  useEffect(() => {
-    setRecentIds(getRecentlyPlayedIds());
-  }, [media]);
 
   const normalizedQuery = query.trim().toLowerCase();
 
-  const matchesQuery = (item: UnreleasedMediaSummary) =>
-    !normalizedQuery || item.title.toLowerCase().includes(normalizedQuery);
-
-  const byFilter = useMemo(() => {
-    if (filter === "liked") return media.filter((m) => liked.has(m.id));
-    return media;
-  }, [media, filter, liked]);
-
-  const audioTracks = useMemo(
-    () => byFilter.filter((m) => m.media_type === "audio" && matchesQuery(m)),
-    [byFilter, normalizedQuery]
-  );
-  const videos = useMemo(
-    () => byFilter.filter((m) => m.media_type === "video" && matchesQuery(m)),
-    [byFilter, normalizedQuery]
-  );
-
-  const recentItems = useMemo(
-    () =>
-      recentIds
-        .map((id) => media.find((m) => m.id === id))
-        .filter((m): m is UnreleasedMediaSummary => Boolean(m)),
-    [recentIds, media]
-  );
-
-  const showAudio = filter !== "video" && audioTracks.length > 0;
-  const showVideo = filter !== "audio" && videos.length > 0;
-  const showRecent =
-    filter === "all" && !normalizedQuery && recentItems.length > 0;
+  const items = useMemo(() => {
+    const typeMap: Record<Tab, UnreleasedMediaSummary["media_type"]> = {
+      videos: "video",
+      music: "audio",
+      images: "image",
+    };
+    return media.filter((m) => {
+      if (m.media_type !== typeMap[tab]) return false;
+      if (showLikedOnly && !liked.has(m.id)) return false;
+      if (normalizedQuery && !m.title.toLowerCase().includes(normalizedQuery)) return false;
+      return true;
+    });
+  }, [media, tab, showLikedOnly, liked, normalizedQuery]);
 
   return (
     <div className="w-full max-w-[900px] pb-28">
+      {/* VIDEOS / MUSIC / IMAGES */}
+      <div className="mb-10 flex justify-center gap-10 text-xs sm:gap-16">
+        {(
+          [
+            ["videos", "Videos"],
+            ["music", "Music"],
+            ["images", "Images"],
+          ] as [Tab, string][]
+        ).map(([value, label]) => (
+          <button
+            key={value}
+            onClick={() => setTab(value)}
+            className={`uppercase tracking-[0.15em] transition ${
+              tab === value ? "text-white" : "text-white/40 hover:text-white/70"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       <div className="mx-auto mb-4 flex max-w-lg items-center gap-2 border border-white/15 px-3 py-2 focus-within:border-white/40">
         <Search size={14} className="shrink-0 text-white/40" />
         <input
@@ -66,7 +67,7 @@ export default function MediaLibrary({ media }: { media: UnreleasedMediaSummary[
         />
       </div>
 
-      <div className="mx-auto mb-8 flex max-w-lg items-center justify-center gap-2">
+      <div className="mx-auto mb-10 flex max-w-lg items-center justify-center gap-2">
         <Link
           href="/unreleased/albums"
           className="flex flex-1 items-center justify-center gap-2 border border-white/15 px-3 py-2 text-xs uppercase tracking-tight text-white/60 transition hover:border-white/40 hover:text-white"
@@ -81,74 +82,34 @@ export default function MediaLibrary({ media }: { media: UnreleasedMediaSummary[
           <ListMusic size={14} />
           Playlists
         </Link>
+        <button
+          onClick={() => setShowLikedOnly((prev) => !prev)}
+          aria-pressed={showLikedOnly}
+          className={`flex flex-1 items-center justify-center gap-2 border px-3 py-2 text-xs uppercase tracking-tight transition ${
+            showLikedOnly
+              ? "border-white bg-white text-black"
+              : "border-white/15 text-white/60 hover:border-white/40 hover:text-white"
+          }`}
+        >
+          <Heart size={14} fill={showLikedOnly ? "black" : "none"} />
+          Liked
+        </button>
       </div>
 
-      <div className="mb-10 flex flex-wrap justify-center gap-2 text-[11px]">
-        {(["all", "audio", "video", "liked"] as Filter[]).map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`border px-4 py-1.5 uppercase tracking-[0.15em] transition ${
-              filter === f
-                ? "border-white bg-white text-black"
-                : "border-white/20 text-white/50 hover:border-white/40 hover:text-white"
-            }`}
-          >
-            {f}
-          </button>
-        ))}
-      </div>
-
-      {showRecent && (
-        <section className="mb-14">
-          <h2 className="mb-4 px-1 text-sm font-medium uppercase tracking-[0.15em] text-white">
-            Recently Played
-          </h2>
-          <AudioTrackList
-            tracks={recentItems.filter((m) => m.media_type === "audio")}
-            likedIds={liked}
-            onToggleLike={toggleLike}
-          />
-          <VideoGrid
-            videos={recentItems.filter((m) => m.media_type === "video")}
-            likedIds={liked}
-            onToggleLike={toggleLike}
-          />
-        </section>
-      )}
-
-      {!showAudio && !showVideo ? (
+      {items.length === 0 ? (
         <p className="py-12 text-center text-sm uppercase tracking-tight text-white/50">
           {normalizedQuery
             ? "No matches for that search."
-            : filter === "liked"
-              ? "Nothing liked yet — tap the heart on a track or video."
-              : "No unreleased media in this category yet."}
+            : showLikedOnly
+              ? "Nothing liked yet — tap the heart on an item."
+              : "Nothing here yet."}
         </p>
+      ) : tab === "videos" ? (
+        <VideoGrid videos={items} likedIds={liked} onToggleLike={toggleLike} />
+      ) : tab === "music" ? (
+        <MusicGrid tracks={items} likedIds={liked} onToggleLike={toggleLike} />
       ) : (
-        <div className="grid gap-14">
-          {showAudio && (
-            <section>
-              {filter === "all" && (
-                <h2 className="mb-4 px-1 text-sm font-medium uppercase tracking-[0.15em] text-white">
-                  Tracks
-                </h2>
-              )}
-              <AudioTrackList tracks={audioTracks} likedIds={liked} onToggleLike={toggleLike} />
-            </section>
-          )}
-
-          {showVideo && (
-            <section>
-              {filter === "all" && (
-                <h2 className="mb-4 px-1 text-sm font-medium uppercase tracking-[0.15em] text-white">
-                  Videos
-                </h2>
-              )}
-              <VideoGrid videos={videos} likedIds={liked} onToggleLike={toggleLike} />
-            </section>
-          )}
-        </div>
+        <ImageGrid images={items} likedIds={liked} onToggleLike={toggleLike} />
       )}
     </div>
   );

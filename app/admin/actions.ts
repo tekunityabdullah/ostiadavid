@@ -137,12 +137,12 @@ export async function addUnreleasedMedia(
   const trackNumber = trackNumberValue ? Number(trackNumberValue) : null;
   const mediaPath = String(formData.get("media_path") ?? "").trim();
 
-  if (!title || (mediaType !== "audio" && mediaType !== "video")) {
+  if (!title || (mediaType !== "audio" && mediaType !== "video" && mediaType !== "image")) {
     return { ok: false, message: "Title and a valid media type are required." };
   }
 
   if (!mediaPath) {
-    return { ok: false, message: "An audio or video file is required." };
+    return { ok: false, message: "An audio, video, or image file is required." };
   }
 
   const supabase = await createClient();

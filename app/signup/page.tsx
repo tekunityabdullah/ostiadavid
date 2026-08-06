@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { getPostLoginRedirect } from "@/lib/getPostLoginRedirect";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { Eye, EyeOff } from "lucide-react";
@@ -45,7 +46,7 @@ export default function SignupPage() {
       return;
     }
 
-    router.push("/");
+    router.push(await getPostLoginRedirect(supabase));
     router.refresh();
   }
 
