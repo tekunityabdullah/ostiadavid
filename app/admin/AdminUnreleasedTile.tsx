@@ -54,6 +54,7 @@ export default function AdminUnreleasedTile({ media, onDeleted }: AdminUnrelease
         </p>
         <p className="text-[11px] uppercase tracking-[0.15em] text-white/40">
           {media.media_type}
+          {media.youtube_url ? " · YouTube" : ""}
         </p>
       </div>
 

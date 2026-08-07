@@ -6,6 +6,7 @@ import type { UnreleasedMediaSummary } from "@/lib/types";
 import { formatCount, formatTime } from "./format";
 import { ARTIST_NAME } from "./constants";
 import AddToPlaylistMenu from "./AddToPlaylistMenu";
+import { getYouTubeThumbnail } from "./youtube";
 
 interface VideoGridProps {
   videos: UnreleasedMediaSummary[];
@@ -26,6 +27,7 @@ export default function VideoGrid({ videos, likedIds, onToggleLike, onRemove, tw
       {videos.map((video) => {
         const isLiked = likedIds.has(video.id);
         const openDetail = () => router.push(`/unreleased/${video.id}`);
+        const thumbnail = video.cover_image || (video.youtube_url ? getYouTubeThumbnail(video.youtube_url) : null);
 
         return (
           <div
@@ -42,10 +44,10 @@ export default function VideoGrid({ videos, likedIds, onToggleLike, onRemove, tw
             className="group grid cursor-pointer gap-2 text-left"
           >
             <div className="relative flex aspect-video items-center justify-center overflow-hidden bg-white/5">
-              {video.cover_image ? (
+              {thumbnail ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={video.cover_image}
+                  src={thumbnail}
                   alt={video.title}
                   className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
                 />

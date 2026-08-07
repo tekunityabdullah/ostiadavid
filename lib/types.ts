@@ -79,7 +79,10 @@ export interface UnreleasedMedia {
   media_type: MediaType;
   description: string | null;
   cover_image: string | null;
-  file_path: string;
+  file_path: string | null;
+  // Set instead of file_path for a video that's a YouTube link rather than
+  // an uploaded file — rendered on-site via iframe embed.
+  youtube_url: string | null;
   duration_seconds: number | null;
   play_count: number;
   album_id: string | null;

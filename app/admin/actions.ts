@@ -136,13 +136,14 @@ export async function addUnreleasedMedia(
   const trackNumberValue = String(formData.get("track_number") ?? "").trim();
   const trackNumber = trackNumberValue ? Number(trackNumberValue) : null;
   const mediaPath = String(formData.get("media_path") ?? "").trim();
+  const youtubeUrl = String(formData.get("youtube_url") ?? "").trim();
 
   if (!title || (mediaType !== "audio" && mediaType !== "video" && mediaType !== "image")) {
     return { ok: false, message: "Title and a valid media type are required." };
   }
 
-  if (!mediaPath) {
-    return { ok: false, message: "An audio, video, or image file is required." };
+  if (!mediaPath && !youtubeUrl) {
+    return { ok: false, message: "An audio, video, or image file (or a YouTube URL) is required." };
   }
 
   const supabase = await createClient();
@@ -151,15 +152,18 @@ export async function addUnreleasedMedia(
     media_type: mediaType,
     description: description || null,
     cover_image: coverImage,
-    file_path: mediaPath,
+    file_path: mediaPath || null,
+    youtube_url: youtubeUrl || null,
     duration_seconds: Number.isFinite(durationSeconds) ? durationSeconds : null,
     album_id: albumId || null,
     track_number: Number.isFinite(trackNumber) ? trackNumber : null,
   });
 
   if (error) {
-    const serviceClient = await createServiceClient();
-    await serviceClient.storage.from(UNRELEASED_MEDIA_BUCKET).remove([mediaPath]);
+    if (mediaPath) {
+      const serviceClient = await createServiceClient();
+      await serviceClient.storage.from(UNRELEASED_MEDIA_BUCKET).remove([mediaPath]);
+    }
     return { ok: false, message: error.message };
   }
 

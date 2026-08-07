@@ -41,6 +41,7 @@ function readDuration(file: File, mediaType: "audio" | "video"): Promise<number 
 export default function UnreleasedMediaForm({ onSuccess, albums }: UnreleasedMediaFormProps) {
   const [state, dispatch, pending] = useActionState(addUnreleasedMedia, initialState);
   const [mediaType, setMediaType] = useState<MediaType>("audio");
+  const [videoSource, setVideoSource] = useState<"upload" | "youtube">("upload");
   const [duration, setDuration] = useState<number | null>(null);
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
@@ -49,6 +50,8 @@ export default function UnreleasedMediaForm({ onSuccess, albums }: UnreleasedMed
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
+
+  const isYoutube = mediaType === "video" && videoSource === "youtube";
 
   useEffect(() => {
     if (state.ok) {
@@ -63,17 +66,17 @@ export default function UnreleasedMediaForm({ onSuccess, albums }: UnreleasedMed
 
   // Files are uploaded to /api/admin/upload first (see that route and
   // uploadFile.ts for why), then only their resulting paths/URLs — plain
-  // strings — get dispatched to the Server Action.
+  // strings — get dispatched to the Server Action. A YouTube-linked video
+  // has no file to upload at all — the link goes straight through.
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!mediaFile || !formRef.current) return;
+    if (!formRef.current) return;
+    if (!isYoutube && !mediaFile) return;
 
     setUploadError("");
     setUploading(true);
 
     try {
-      const mediaUpload = await uploadAdminFile("unreleased-media", mediaFile);
-
       let coverUrl = new FormData(formRef.current).get("cover_image_url");
       let coverUrlString = typeof coverUrl === "string" ? coverUrl.trim() : "";
 
@@ -85,8 +88,14 @@ export default function UnreleasedMediaForm({ onSuccess, albums }: UnreleasedMed
       const fd = new FormData(formRef.current);
       fd.delete("media_file");
       fd.delete("cover_image_file");
-      fd.set("media_path", mediaUpload.path);
       fd.set("cover_image_url", coverUrlString);
+
+      if (isYoutube) {
+        fd.delete("media_path");
+      } else {
+        const mediaUpload = await uploadAdminFile("unreleased-media", mediaFile!);
+        fd.set("media_path", mediaUpload.path);
+      }
 
       dispatch(fd);
     } catch (err) {
@@ -118,6 +127,23 @@ export default function UnreleasedMediaForm({ onSuccess, albums }: UnreleasedMed
           <option value="image">Image</option>
         </select>
       </Field>
+
+      {mediaType === "video" && (
+        <Field label="Video source">
+          <select
+            value={videoSource}
+            onChange={(e) => {
+              setVideoSource(e.target.value as "upload" | "youtube");
+              setMediaFile(null);
+              setDuration(null);
+            }}
+            className={inputClass}
+          >
+            <option value="upload">Upload a file</option>
+            <option value="youtube">YouTube link</option>
+          </select>
+        </Field>
+      )}
 
       {mediaType === "audio" && (
         <div className="grid gap-5 border border-white/10 bg-white/[0.02] p-4 sm:grid-cols-2">
@@ -176,36 +202,48 @@ export default function UnreleasedMediaForm({ onSuccess, albums }: UnreleasedMed
         <textarea name="description" rows={3} className={textareaClass} />
       </Field>
 
-      <Field
-        label={
-          mediaType === "audio" ? "Audio file" : mediaType === "video" ? "Video file" : "Image file"
-        }
-        hint={
-          <>
-            Stored privately and streamed on-site only — never offered as a download.
-            {duration !== null &&
-              ` Detected length: ${Math.floor(duration / 60)}:${String(duration % 60).padStart(2, "0")}.`}
-          </>
-        }
-      >
-        <input
-          name="media_file"
-          type="file"
-          accept={
-            mediaType === "audio" ? "audio/*" : mediaType === "video" ? "video/*" : "image/*"
+      {isYoutube ? (
+        <Field label="YouTube URL" hint="Embedded on-site via iframe — nothing is uploaded or stored.">
+          <input
+            name="youtube_url"
+            type="url"
+            required
+            placeholder="https://www.youtube.com/watch?v=..."
+            className={inputClass}
+          />
+        </Field>
+      ) : (
+        <Field
+          label={
+            mediaType === "audio" ? "Audio file" : mediaType === "video" ? "Video file" : "Image file"
           }
-          required
-          onChange={(e) => {
-            const file = e.target.files?.[0] ?? null;
-            setMediaFile(file);
-            setDuration(null);
-            if (file && mediaType !== "image") {
-              readDuration(file, mediaType).then(setDuration);
+          hint={
+            <>
+              Stored privately and streamed on-site only — never offered as a download.
+              {duration !== null &&
+                ` Detected length: ${Math.floor(duration / 60)}:${String(duration % 60).padStart(2, "0")}.`}
+            </>
+          }
+        >
+          <input
+            name="media_file"
+            type="file"
+            accept={
+              mediaType === "audio" ? "audio/*" : mediaType === "video" ? "video/*" : "image/*"
             }
-          }}
-          className={fileInputClass}
-        />
-      </Field>
+            required
+            onChange={(e) => {
+              const file = e.target.files?.[0] ?? null;
+              setMediaFile(file);
+              setDuration(null);
+              if (file && mediaType !== "image") {
+                readDuration(file, mediaType).then(setDuration);
+              }
+            }}
+            className={fileInputClass}
+          />
+        </Field>
+      )}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <AdminButton type="submit" disabled={busy}>

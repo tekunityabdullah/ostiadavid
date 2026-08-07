@@ -19,6 +19,7 @@ import AudioTrackList from "./AudioTrackList";
 import VideoGrid from "./VideoGrid";
 import WaveformIcon from "./WaveformIcon";
 import { formatTime } from "./format";
+import { getYouTubeEmbedUrl } from "./youtube";
 
 interface MediaDetailProps {
   item: UnreleasedMediaSummary;
@@ -40,7 +41,11 @@ export default function MediaDetail({ item, related, initialStreamUrl }: MediaDe
       </Link>
 
       {item.media_type === "video" ? (
-        <VideoDetail item={item} initialUrl={initialStreamUrl ?? null} />
+        item.youtube_url ? (
+          <YouTubeVideoDetail item={item} />
+        ) : (
+          <VideoDetail item={item} initialUrl={initialStreamUrl ?? null} />
+        )
       ) : item.media_type === "image" ? (
         <ImageDetail item={item} initialUrl={initialStreamUrl ?? null} />
       ) : (
@@ -189,6 +194,35 @@ function AudioDetail({ item }: { item: UnreleasedMediaSummary }) {
       >
         Add to Cart
       </button>
+    </div>
+  );
+}
+
+function YouTubeVideoDetail({ item }: { item: UnreleasedMediaSummary }) {
+  const embedUrl = item.youtube_url ? getYouTubeEmbedUrl(item.youtube_url) : null;
+
+  return (
+    <div>
+      <div className="relative flex aspect-video w-full items-center justify-center overflow-hidden bg-white/5">
+        {embedUrl ? (
+          <iframe
+            src={embedUrl}
+            title={item.title}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            className="h-full w-full"
+          />
+        ) : (
+          <p className="text-sm uppercase tracking-tight text-white/50">Invalid YouTube link.</p>
+        )}
+      </div>
+
+      <h1 className="mt-4 text-lg font-medium uppercase tracking-wide text-white sm:text-xl">
+        {item.title}
+      </h1>
+      {item.description && (
+        <p className="mt-2 max-w-xl text-xs leading-relaxed text-white/50">{item.description}</p>
+      )}
     </div>
   );
 }
