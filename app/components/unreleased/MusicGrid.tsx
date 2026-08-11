@@ -8,12 +8,14 @@ import AddToPlaylistMenu from "./AddToPlaylistMenu";
 
 interface MusicGridProps {
   tracks: UnreleasedMediaSummary[];
-  likedIds: Set<string>;
-  onToggleLike: (id: string) => void;
+  likedIds?: Set<string>;
+  onToggleLike?: (id: string) => void;
   onRemove?: (id: string) => void;
+  /** Hides the like/add-to-playlist hover icons — used on the main Unreleased library grid, which shows tiles unadorned to match the reference design. */
+  hideActions?: boolean;
 }
 
-export default function MusicGrid({ tracks, likedIds, onToggleLike, onRemove }: MusicGridProps) {
+export default function MusicGrid({ tracks, likedIds, onToggleLike, onRemove, hideActions }: MusicGridProps) {
   const router = useRouter();
 
   if (!tracks.length) return null;
@@ -21,7 +23,7 @@ export default function MusicGrid({ tracks, likedIds, onToggleLike, onRemove }: 
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
       {tracks.map((track) => {
-        const isLiked = likedIds.has(track.id);
+        const isLiked = likedIds?.has(track.id) ?? false;
         const openDetail = () => router.push(`/unreleased/${track.id}`);
 
         return (
@@ -47,29 +49,35 @@ export default function MusicGrid({ tracks, likedIds, onToggleLike, onRemove }: 
                   className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
                 />
               ) : (
-                <WaveformIcon size={64} className="text-white/30" />
+                <div className="flex h-full w-full items-center justify-center p-10">
+                  <WaveformIcon fill className="text-gray-400" />
+                </div>
               )}
 
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggleLike(track.id);
-                }}
-                aria-label={isLiked ? "Unlike" : "Like"}
-                aria-pressed={isLiked}
-                className={`absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center bg-black/60 transition hover:scale-110 ${
-                  isLiked ? "text-white" : "text-white/70 sm:opacity-0 sm:group-hover:opacity-100"
-                }`}
-              >
-                <Heart size={14} fill={isLiked ? "white" : "none"} />
-              </button>
+              {!hideActions && onToggleLike && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleLike(track.id);
+                  }}
+                  aria-label={isLiked ? "Unlike" : "Like"}
+                  aria-pressed={isLiked}
+                  className={`absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center bg-black/60 transition hover:scale-110 ${
+                    isLiked ? "text-white" : "text-white/70 sm:opacity-0 sm:group-hover:opacity-100"
+                  }`}
+                >
+                  <Heart size={14} fill={isLiked ? "white" : "none"} />
+                </button>
+              )}
 
-              <div
-                onClick={(e) => e.stopPropagation()}
-                className="absolute right-1.5 top-10 flex h-7 w-7 items-center justify-center bg-black/60 text-white/70 transition hover:scale-110 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
-              >
-                <AddToPlaylistMenu mediaId={track.id} />
-              </div>
+              {!hideActions && (
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute right-1.5 top-10 flex h-7 w-7 items-center justify-center bg-black/60 text-white/70 transition hover:scale-110 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
+                >
+                  <AddToPlaylistMenu mediaId={track.id} />
+                </div>
+              )}
 
               {onRemove && (
                 <button

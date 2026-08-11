@@ -76,6 +76,68 @@ export async function addProduct(
   return { ok: true, message: "Product added." };
 }
 
+export async function updateProduct(
+  _prevState: ProductFormState,
+  formData: FormData
+): Promise<ProductFormState> {
+  if (!(await isAdmin())) {
+    redirect("/admin/login");
+  }
+
+  const productId = String(formData.get("product_id") ?? "").trim();
+  const name = String(formData.get("name") ?? "").trim();
+  const priceValue = String(formData.get("price") ?? "").trim();
+  const image = String(formData.get("image_url") ?? "").trim();
+  const category = String(formData.get("category") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+  const isExclusive = formData.get("is_exclusive") === "on";
+  const isDigital = formData.get("is_digital") === "on";
+  const digitalFilePath = String(formData.get("digital_file_path") ?? "").trim() || null;
+  const price = Number(priceValue);
+
+  if (!productId) {
+    return { ok: false, message: "Missing product." };
+  }
+
+  if (!name || !priceValue || !image) {
+    return { ok: false, message: "Name, price, and an image (upload or URL) are required." };
+  }
+
+  if (!Number.isFinite(price) || price < 0) {
+    return { ok: false, message: "Enter a valid price." };
+  }
+
+  if (isDigital && !digitalFilePath) {
+    return { ok: false, message: "A WAV file is required for digital downloads." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("products")
+    .update({
+      name,
+      price,
+      image,
+      category: category || null,
+      description: description || null,
+      is_exclusive: isExclusive,
+      is_digital: isDigital,
+      digital_file_path: digitalFilePath,
+    })
+    .eq("id", productId);
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/collections");
+  revalidatePath("/exclusive");
+  revalidatePath("/admin");
+
+  return { ok: true, message: "Product updated." };
+}
+
 export async function deleteProduct(formData: FormData) {
   if (!(await isAdmin())) {
     redirect("/admin/login");
@@ -171,6 +233,87 @@ export async function addUnreleasedMedia(
   revalidatePath("/admin");
 
   return { ok: true, message: "Track added." };
+}
+
+export async function updateUnreleasedMedia(
+  _prevState: ProductFormState,
+  formData: FormData
+): Promise<ProductFormState> {
+  if (!(await isAdmin())) {
+    redirect("/admin/login");
+  }
+
+  const mediaId = String(formData.get("media_id") ?? "").trim();
+  const title = String(formData.get("title") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+  const coverImage = String(formData.get("cover_image_url") ?? "").trim() || null;
+  const durationValue = String(formData.get("duration_seconds") ?? "").trim();
+  const albumId = String(formData.get("album_id") ?? "").trim();
+  const trackNumberValue = String(formData.get("track_number") ?? "").trim();
+  const trackNumber = trackNumberValue ? Number(trackNumberValue) : null;
+  // Only set when the admin actually chose a replacement file this submit —
+  // an empty value here means "keep whatever's already stored".
+  const newMediaPath = String(formData.get("media_path") ?? "").trim();
+  const youtubeUrl = String(formData.get("youtube_url") ?? "").trim();
+
+  if (!mediaId) {
+    return { ok: false, message: "Missing track/video/image." };
+  }
+
+  if (!title) {
+    return { ok: false, message: "Title is required." };
+  }
+
+  const supabase = await createClient();
+
+  const updates: Record<string, unknown> = {
+    title,
+    description: description || null,
+    cover_image: coverImage,
+    album_id: albumId || null,
+    track_number: Number.isFinite(trackNumber) ? trackNumber : null,
+  };
+
+  if (durationValue) {
+    const durationSeconds = Number(durationValue);
+    updates.duration_seconds = Number.isFinite(durationSeconds) ? durationSeconds : null;
+  }
+
+  let oldFilePath: string | null = null;
+
+  if (newMediaPath) {
+    const { data: existing } = await supabase
+      .from("unreleased_media")
+      .select("file_path")
+      .eq("id", mediaId)
+      .single();
+    oldFilePath = existing?.file_path ?? null;
+    updates.file_path = newMediaPath;
+    updates.youtube_url = null;
+  } else if (youtubeUrl) {
+    updates.youtube_url = youtubeUrl;
+  }
+
+  const { error } = await supabase.from("unreleased_media").update(updates).eq("id", mediaId);
+
+  if (error) {
+    if (newMediaPath) {
+      const serviceClient = await createServiceClient();
+      await serviceClient.storage.from(UNRELEASED_MEDIA_BUCKET).remove([newMediaPath]);
+    }
+    return { ok: false, message: error.message };
+  }
+
+  if (oldFilePath && oldFilePath !== newMediaPath) {
+    const serviceClient = await createServiceClient();
+    await serviceClient.storage.from(UNRELEASED_MEDIA_BUCKET).remove([oldFilePath]);
+  }
+
+  revalidatePath("/unreleased");
+  revalidatePath("/exclusive");
+  revalidatePath("/admin");
+
+  return { ok: true, message: "Updated." };
 }
 
 export async function deleteUnreleasedMedia(formData: FormData) {

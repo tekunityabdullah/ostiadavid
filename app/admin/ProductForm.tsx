@@ -1,10 +1,11 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { Plus } from "lucide-react";
-import { addProduct, type ProductFormState } from "./actions";
+import { Plus, Save } from "lucide-react";
+import { addProduct, updateProduct, type ProductFormState } from "./actions";
 import { AdminButton, Field, fileInputClass, inputClass, textareaClass } from "./ui";
 import { uploadAdminFile } from "./uploadFile";
+import type { Product } from "@/lib/types";
 
 const initialState: ProductFormState = {
   ok: false,
@@ -13,13 +14,16 @@ const initialState: ProductFormState = {
 
 interface ProductFormProps {
   onSuccess?: () => void;
+  /** When provided, the form edits this product instead of creating a new one. */
+  product?: Product;
 }
 
-export default function ProductForm({ onSuccess }: ProductFormProps) {
-  const [state, dispatch, pending] = useActionState(addProduct, initialState);
-  const [isDigital, setIsDigital] = useState(false);
+export default function ProductForm({ onSuccess, product }: ProductFormProps) {
+  const isEditing = Boolean(product);
+  const [state, dispatch, pending] = useActionState(isEditing ? updateProduct : addProduct, initialState);
+  const [isDigital, setIsDigital] = useState(product?.is_digital ?? false);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(product?.image ?? null);
   const [digitalFile, setDigitalFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
@@ -28,13 +32,15 @@ export default function ProductForm({ onSuccess }: ProductFormProps) {
   useEffect(() => {
     if (state.ok) {
       onSuccess?.();
-      setImageFile(null);
-      setImagePreview(null);
-      setDigitalFile(null);
-      setIsDigital(false);
-      formRef.current?.reset();
+      if (!isEditing) {
+        setImageFile(null);
+        setImagePreview(null);
+        setDigitalFile(null);
+        setIsDigital(false);
+        formRef.current?.reset();
+      }
     }
-  }, [state, onSuccess]);
+  }, [state, onSuccess, isEditing]);
 
   // Files are uploaded to /api/admin/upload first (see that route and
   // uploadFile.ts for why), then only their resulting paths/URLs — plain
@@ -61,15 +67,20 @@ export default function ProductForm({ onSuccess }: ProductFormProps) {
         return;
       }
 
-      let digitalFilePath = "";
+      // Keep the existing digital file by default when editing — only
+      // replace it if the admin actually picked a new one.
+      let digitalFilePath = product?.digital_file_path ?? "";
       if (isDigital) {
-        if (!digitalFile) {
+        if (digitalFile) {
+          const upload = await uploadAdminFile("digital-downloads", digitalFile);
+          digitalFilePath = upload.path;
+        } else if (!digitalFilePath) {
           setUploadError("A WAV file is required for digital downloads.");
           setUploading(false);
           return;
         }
-        const upload = await uploadAdminFile("digital-downloads", digitalFile);
-        digitalFilePath = upload.path;
+      } else {
+        digitalFilePath = "";
       }
 
       const fd = new FormData(formRef.current);
@@ -90,19 +101,30 @@ export default function ProductForm({ onSuccess }: ProductFormProps) {
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="grid gap-5">
+      {isEditing && <input type="hidden" name="product_id" value={product!.id} />}
+
       <Field label="Product name">
-        <input name="name" required className={inputClass} />
+        <input name="name" required defaultValue={product?.name} className={inputClass} />
       </Field>
 
       <div className="grid gap-5 md:grid-cols-2">
         <Field label="Price">
-          <input name="price" type="number" min="0" step="0.01" required className={inputClass} />
+          <input
+            name="price"
+            type="number"
+            min="0"
+            step="0.01"
+            required
+            defaultValue={product?.price}
+            className={inputClass}
+          />
         </Field>
 
         <Field label="Category">
           <input
             name="category"
             placeholder="apparel, digital, accessories"
+            defaultValue={product?.category ?? ""}
             className={inputClass}
           />
         </Field>
@@ -121,7 +143,7 @@ export default function ProductForm({ onSuccess }: ProductFormProps) {
             onChange={(e) => {
               const file = e.target.files?.[0] ?? null;
               setImageFile(file);
-              setImagePreview(file ? URL.createObjectURL(file) : null);
+              setImagePreview(file ? URL.createObjectURL(file) : product?.image ?? null);
             }}
             className={fileInputClass}
           />
@@ -130,18 +152,24 @@ export default function ProductForm({ onSuccess }: ProductFormProps) {
         <input
           name="image_url"
           type="url"
+          defaultValue={product?.image ?? ""}
           placeholder="https://..."
           className={`${inputClass} mt-2`}
         />
       </Field>
 
       <Field label="Description">
-        <textarea name="description" rows={4} className={textareaClass} />
+        <textarea name="description" rows={4} defaultValue={product?.description ?? ""} className={textareaClass} />
       </Field>
 
       <div className="grid gap-3 border border-white/10 bg-white/[0.02] p-4">
         <label className="flex items-center gap-3 text-xs uppercase tracking-[0.15em] text-white">
-          <input name="is_exclusive" type="checkbox" className="size-4 accent-white" />
+          <input
+            name="is_exclusive"
+            type="checkbox"
+            className="size-4 accent-white"
+            defaultChecked={product?.is_exclusive ?? false}
+          />
           Exclusive product
         </label>
 
@@ -160,13 +188,17 @@ export default function ProductForm({ onSuccess }: ProductFormProps) {
       {isDigital && (
         <Field
           label="Digital file (WAV)"
-          hint="Sent to buyers as a secure download link by email after purchase. Not fulfilled through Printful."
+          hint={
+            product?.digital_file_path
+              ? "A file is already attached — leave blank to keep it, or choose a new one to replace it."
+              : "Sent to buyers as a secure download link by email after purchase. Not fulfilled through Printful."
+          }
         >
           <input
             name="digital_file"
             type="file"
             accept=".wav,audio/wav"
-            required={isDigital}
+            required={isDigital && !product?.digital_file_path}
             onChange={(e) => setDigitalFile(e.target.files?.[0] ?? null)}
             className={fileInputClass}
           />
@@ -175,8 +207,8 @@ export default function ProductForm({ onSuccess }: ProductFormProps) {
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <AdminButton type="submit" disabled={busy}>
-          <Plus size={16} />
-          {uploading ? "Uploading..." : pending ? "Saving..." : "Add product"}
+          {isEditing ? <Save size={16} /> : <Plus size={16} />}
+          {uploading ? "Uploading..." : pending ? "Saving..." : isEditing ? "Save changes" : "Add product"}
         </AdminButton>
 
         {(uploadError || state.message) && (

@@ -3,29 +3,30 @@
 import { useRouter } from "next/navigation";
 import { Heart, Play, Video as VideoIcon, X } from "lucide-react";
 import type { UnreleasedMediaSummary } from "@/lib/types";
-import { formatCount, formatTime } from "./format";
-import { ARTIST_NAME } from "./constants";
+import { formatTime } from "./format";
 import AddToPlaylistMenu from "./AddToPlaylistMenu";
 import { getYouTubeThumbnail } from "./youtube";
 
 interface VideoGridProps {
   videos: UnreleasedMediaSummary[];
-  likedIds: Set<string>;
-  onToggleLike: (id: string) => void;
+  likedIds?: Set<string>;
+  onToggleLike?: (id: string) => void;
   onRemove?: (id: string) => void;
-  /** Force a plain 2-column grid (used under the video detail's "more videos" strip) instead of the default responsive 1→4 column layout. */
+  /** Force a flat 2-column grid with no sm breakpoint bump (used under the video detail's "more videos" strip). */
   twoColumn?: boolean;
+  /** Hides the like/add-to-playlist hover icons — used on the main Unreleased library grid, which shows tiles unadorned to match the reference design. */
+  hideActions?: boolean;
 }
 
-export default function VideoGrid({ videos, likedIds, onToggleLike, onRemove, twoColumn }: VideoGridProps) {
+export default function VideoGrid({ videos, likedIds, onToggleLike, onRemove, twoColumn, hideActions }: VideoGridProps) {
   const router = useRouter();
 
   if (!videos.length) return null;
 
   return (
-    <div className={`grid gap-4 ${twoColumn ? "grid-cols-2" : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"}`}>
+    <div className={`grid gap-4 ${twoColumn ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-3"}`}>
       {videos.map((video) => {
-        const isLiked = likedIds.has(video.id);
+        const isLiked = likedIds?.has(video.id) ?? false;
         const openDetail = () => router.push(`/unreleased/${video.id}`);
         const thumbnail = video.cover_image || (video.youtube_url ? getYouTubeThumbnail(video.youtube_url) : null);
 
@@ -52,7 +53,9 @@ export default function VideoGrid({ videos, likedIds, onToggleLike, onRemove, tw
                   className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
                 />
               ) : (
-                <VideoIcon size={28} className="text-white/30" />
+                <div className="flex h-full w-full items-center justify-center p-10">
+                  <VideoIcon className="h-full w-full text-white/30" />
+                </div>
               )}
 
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" />
@@ -63,26 +66,30 @@ export default function VideoGrid({ videos, likedIds, onToggleLike, onRemove, tw
                 </span>
               </div>
 
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggleLike(video.id);
-                }}
-                aria-label={isLiked ? "Unlike" : "Like"}
-                aria-pressed={isLiked}
-                className={`absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center bg-black/60 transition hover:scale-110 ${
-                  isLiked ? "text-white" : "text-white/70 sm:opacity-0 sm:group-hover:opacity-100"
-                }`}
-              >
-                <Heart size={14} fill={isLiked ? "white" : "none"} />
-              </button>
+              {!hideActions && onToggleLike && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleLike(video.id);
+                  }}
+                  aria-label={isLiked ? "Unlike" : "Like"}
+                  aria-pressed={isLiked}
+                  className={`absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center bg-black/60 transition hover:scale-110 ${
+                    isLiked ? "text-white" : "text-white/70 sm:opacity-0 sm:group-hover:opacity-100"
+                  }`}
+                >
+                  <Heart size={14} fill={isLiked ? "white" : "none"} />
+                </button>
+              )}
 
-              <div
-                onClick={(e) => e.stopPropagation()}
-                className="absolute right-1.5 top-10 flex h-7 w-7 items-center justify-center bg-black/60 text-white/70 transition hover:scale-110 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
-              >
-                <AddToPlaylistMenu mediaId={video.id} />
-              </div>
+              {!hideActions && (
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute right-1.5 top-10 flex h-7 w-7 items-center justify-center bg-black/60 text-white/70 transition hover:scale-110 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
+                >
+                  <AddToPlaylistMenu mediaId={video.id} />
+                </div>
+              )}
 
               {onRemove && (
                 <button
@@ -104,20 +111,9 @@ export default function VideoGrid({ videos, likedIds, onToggleLike, onRemove, tw
               )}
             </div>
 
-            <div className="flex gap-2.5 sm:gap-2">
-              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center bg-white/10 text-xs font-medium uppercase text-white/70 sm:h-6 sm:w-6 sm:text-[10px]">
-                {ARTIST_NAME.charAt(0)}
-              </span>
-              <div className="grid min-w-0 gap-0.5">
-                <p className="truncate text-sm tracking-tight text-white sm:text-xs">
-                  {video.title}
-                </p>
-                <p className="truncate text-xs text-white/40 sm:text-[11px]">{ARTIST_NAME}</p>
-                <p className="truncate text-xs text-white/40 sm:text-[11px]">
-                  {formatCount(video.play_count)} {video.play_count === 1 ? "view" : "views"}
-                </p>
-              </div>
-            </div>
+            <p className="truncate text-center text-xs uppercase tracking-tight text-white">
+              {video.title}
+            </p>
           </div>
         );
       })}

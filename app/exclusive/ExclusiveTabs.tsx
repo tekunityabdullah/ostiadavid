@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import type { EventItem, Product, UnreleasedMediaSummary } from "@/lib/types";
 import ProductCard from "../components/ProductCard";
 import MediaLibrary from "../components/unreleased/MediaLibrary";
@@ -15,9 +16,31 @@ interface ExclusiveTabsProps {
   events: EventItem[];
 }
 
+const VALID_TABS: Tab[] = ["clothes", "unreleased", "events"];
+
 export default function ExclusiveTabs({ products, media, events }: ExclusiveTabsProps) {
-  const [tab, setTab] = useState<Tab>("clothes");
+  // Lets links back into this page (e.g. from a track/video detail page's
+  // "Unreleased" breadcrumb) land on the right tab instead of always
+  // resetting to Clothes.
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const initialTab = VALID_TABS.includes(requestedTab as Tab) ? (requestedTab as Tab) : "clothes";
+
+  const [tab, setTab] = useState<Tab>(initialTab);
   const [eventFilter, setEventFilter] = useState<EventFilter>("upcoming");
+
+  // Tab clicks don't trigger a Next.js navigation (kept snappy, no
+  // server round-trip) — but that means the address bar never picks up
+  // which tab is active. Without this, the browser's Back button (and any
+  // link that lands plainly on /exclusive) always restores whatever the
+  // URL said on first load, i.e. Clothes. Silently syncing the URL via the
+  // native History API keeps the current tab as part of this history
+  // entry, so Back from a track/video detail page returns to the right tab.
+  const selectTab = (value: Tab) => {
+    setTab(value);
+    const url = value === "clothes" ? "/exclusive" : `/exclusive?tab=${value}`;
+    window.history.replaceState(null, "", url);
+  };
 
   const { upcoming, past } = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
@@ -31,7 +54,7 @@ export default function ExclusiveTabs({ products, media, events }: ExclusiveTabs
 
   return (
     <div className="w-full">
-      <div className="mb-10 flex justify-center gap-10 text-xs sm:gap-16">
+      <div className="mb-10 flex justify-center gap-8 text-xs sm:gap-14">
         {(
           [
             ["clothes", "Clothes"],
@@ -41,9 +64,9 @@ export default function ExclusiveTabs({ products, media, events }: ExclusiveTabs
         ).map(([value, label]) => (
           <button
             key={value}
-            onClick={() => setTab(value)}
-            className={`uppercase tracking-[0.15em] transition ${
-              tab === value ? "text-white" : "text-white/40 hover:text-white/70"
+            onClick={() => selectTab(value)}
+            className={`uppercase tracking-[0.2em] transition ${
+              tab === value ? "font-semibold text-white" : "font-normal text-white/40 hover:text-white/70"
             }`}
           >
             {label}
@@ -52,7 +75,7 @@ export default function ExclusiveTabs({ products, media, events }: ExclusiveTabs
       </div>
 
       {tab === "events" && (
-        <div className="mb-10 flex justify-center gap-10 text-[11px]">
+        <div className="mb-10 flex justify-center gap-8 text-[11px]">
           {(
             [
               ["upcoming", "Upcoming"],
@@ -62,8 +85,8 @@ export default function ExclusiveTabs({ products, media, events }: ExclusiveTabs
             <button
               key={value}
               onClick={() => setEventFilter(value)}
-              className={`uppercase tracking-[0.15em] transition ${
-                eventFilter === value ? "text-white" : "text-white/40 hover:text-white/70"
+              className={`uppercase tracking-[0.2em] transition ${
+                eventFilter === value ? "font-semibold text-white" : "font-normal text-white/40 hover:text-white/70"
               }`}
             >
               {label}

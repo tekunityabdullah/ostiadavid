@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { X } from "lucide-react";
 
 // Shared visual language for every admin form/card/button, so Products,
 // Unreleased, and Albums stop looking like three separately-styled pages.
@@ -61,6 +62,41 @@ export function CardHeading({ eyebrow, title }: { eyebrow?: string; title: strin
         <p className="mb-1 text-[10px] uppercase tracking-[0.24em] text-white/40">{eyebrow}</p>
       )}
       <h3 className="text-sm font-medium uppercase tracking-[0.2em] text-white/85">{title}</h3>
+    </div>
+  );
+}
+
+interface AdminModalProps {
+  title: string;
+  onClose: () => void;
+  children: ReactNode;
+}
+
+// Shared edit-form overlay — used wherever a tile needs an "Edit" action
+// without navigating away from the list it belongs to.
+export function AdminModal({ title, onClose, children }: AdminModalProps) {
+  return (
+    <div
+      className="fixed inset-0 z-200 flex items-start justify-center overflow-y-auto bg-black/80 px-4 py-10"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-lg border border-white/15 bg-black p-5 md:p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-5 flex items-center justify-between gap-4">
+          <h3 className="text-sm font-medium uppercase tracking-[0.2em] text-white/85">{title}</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="-m-2 p-2 text-white/50 transition hover:text-white"
+          >
+            <X size={18} />
+          </button>
+        </div>
+        {children}
+      </div>
     </div>
   );
 }

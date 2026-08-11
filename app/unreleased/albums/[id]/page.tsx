@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Header from "../../../components/Header";
-import SubNav from "../../../components/SubNav";
 import Footer from "../../../components/Footer";
 import AlbumDetail from "../../../components/unreleased/AlbumDetail";
 import { getAlbumById, getAlbumTracks } from "@/lib/unreleased";
@@ -37,9 +36,8 @@ export default async function UnreleasedAlbumPage({ params }: AlbumPageProps) {
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
       <Header />
-      <SubNav activePage="unreleased" />
 
-      <main className="pt-32 flex justify-center w-full max-w-[1400px] mx-auto flex-1">
+      <main className="pt-24 flex justify-center w-full max-w-[1400px] mx-auto flex-1">
         <section className="flex flex-col items-center px-4 pt-6 pb-16 w-full">
           <AlbumDetail album={album} tracks={tracks} />
         </section>

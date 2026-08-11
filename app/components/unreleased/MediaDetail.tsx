@@ -33,7 +33,7 @@ export default function MediaDetail({ item, related, initialStreamUrl }: MediaDe
   return (
     <div className="w-full max-w-[900px]">
       <Link
-        href="/unreleased"
+        href="/exclusive?tab=unreleased"
         className="mb-8 inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.2em] text-white/40 transition hover:text-white"
       >
         <ChevronLeft size={14} />
@@ -117,7 +117,9 @@ function AudioDetail({ item }: { item: UnreleasedMediaSummary }) {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={item.cover_image} alt={item.title} className="h-full w-full object-cover" />
         ) : (
-          <WaveformIcon size={110} className="text-white/25" />
+          <div className="flex h-full w-full items-center justify-center p-14">
+            <WaveformIcon fill className="text-gray-400" />
+          </div>
         )}
       </div>
 
@@ -187,13 +189,6 @@ function AudioDetail({ item }: { item: UnreleasedMediaSummary }) {
           <SkipForward size={20} fill="currentColor" />
         </button>
       </div>
-
-      <button
-        type="button"
-        className="mt-1 text-xs uppercase tracking-[0.3em] text-white underline underline-offset-4 transition hover:text-white/70"
-      >
-        Add to Cart
-      </button>
     </div>
   );
 }

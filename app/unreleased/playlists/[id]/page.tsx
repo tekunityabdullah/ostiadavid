@@ -1,5 +1,4 @@
 import Header from "../../../components/Header";
-import SubNav from "../../../components/SubNav";
 import Footer from "../../../components/Footer";
 import PlaylistDetail from "../../../components/unreleased/PlaylistDetail";
 
@@ -13,9 +12,8 @@ export default async function UnreleasedPlaylistPage({ params }: PlaylistPagePro
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
       <Header />
-      <SubNav activePage="unreleased" />
 
-      <main className="pt-32 flex justify-center w-full max-w-[1400px] mx-auto flex-1">
+      <main className="pt-24 flex justify-center w-full max-w-[1400px] mx-auto flex-1">
         <section className="flex flex-col items-center px-4 pt-6 pb-16 w-full">
           <PlaylistDetail playlistId={id} />
         </section>

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Header from "../../components/Header";
-import SubNav from "../../components/SubNav";
 import Footer from "../../components/Footer";
 import MediaDetail from "../../components/unreleased/MediaDetail";
 import { getStreamUrl, getUnreleasedMedia, getUnreleasedMediaById } from "@/lib/unreleased";
@@ -49,9 +48,8 @@ export default async function UnreleasedDetailPage({ params }: DetailPageProps) 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
       <Header />
-      <SubNav activePage="unreleased" />
 
-      <main className="pt-32 flex justify-center w-full max-w-[1400px] mx-auto flex-1">
+      <main className="pt-24 flex justify-center w-full max-w-[1400px] mx-auto flex-1">
         <section className="flex flex-col items-center px-4 pt-6 pb-16 w-full">
           <MediaDetail item={item} related={related} initialStreamUrl={initialStream?.url ?? null} />
         </section>

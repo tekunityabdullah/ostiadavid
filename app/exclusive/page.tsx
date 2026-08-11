@@ -62,14 +62,9 @@ export default async function ExclusivePage() {
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
       <Header />
-      <SubNav activePage="exclusive" />
 
-      <main className="pt-32 flex justify-center w-full max-w-[1400px] mx-auto flex-1">
+      <main className="pt-24 flex justify-center w-full max-w-[1400px] mx-auto flex-1">
         <section className="flex flex-col items-center px-4 pt-6 pb-8 w-full">
-          <h1 className="text-2xl md:text-4xl lg:text-5xl font-medium uppercase tracking-wide text-white mb-10 text-center">
-            Exclusive
-          </h1>
-
           <ExclusiveTabs products={products} media={media} events={events} />
         </section>
       </main>

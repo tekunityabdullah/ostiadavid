@@ -1,14 +1,23 @@
 // A static, decorative "audio pulse" glyph used as the placeholder for
 // tracks without cover art — both the small grid tiles and the large
-// Now Playing view use this, sized via the `size` prop and colored via
-// currentColor (pass a text-white/* className to the wrapper).
-export default function WaveformIcon({ size = 40, className = "" }: { size?: number; className?: string }) {
+// Now Playing view use this, colored via currentColor (pass a text-white/*
+// className to the wrapper). Pass `fill` to scale it up to its container
+// (like object-cover on a real image) instead of a fixed pixel `size`.
+export default function WaveformIcon({
+  size = 40,
+  fill = false,
+  className = "",
+}: {
+  size?: number;
+  fill?: boolean;
+  className?: string;
+}) {
   return (
     <svg
-      width={size}
-      height={size}
+      {...(fill ? { width: "100%", height: "100%" } : { width: size, height: size })}
       viewBox="0 0 200 160"
       fill="none"
+      preserveAspectRatio="xMidYMid meet"
       className={className}
       aria-hidden="true"
     >

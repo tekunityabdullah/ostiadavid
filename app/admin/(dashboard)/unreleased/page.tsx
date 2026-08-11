@@ -61,7 +61,9 @@ export default function AdminUnreleasedPage() {
                 <AdminUnreleasedTile
                   key={media.id}
                   media={media}
+                  albums={albums}
                   onDeleted={loadUnreleasedMedia}
+                  onUpdated={loadUnreleasedMedia}
                 />
               ))}
             </div>

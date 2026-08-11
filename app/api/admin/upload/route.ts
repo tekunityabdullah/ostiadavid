@@ -44,6 +44,10 @@ export async function POST(request: NextRequest) {
   });
 
   if (error) {
+    // Logged server-side too — the terminal's "POST .../upload 500" line
+    // alone doesn't say *why* it failed (size limit vs. something else),
+    // and this is the one place that actually knows.
+    console.error(`Upload to bucket "${bucket}" failed (${file.size} bytes):`, error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 

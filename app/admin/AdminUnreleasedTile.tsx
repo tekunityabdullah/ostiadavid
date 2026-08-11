@@ -1,18 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2, Music, Video, ImageIcon } from "lucide-react";
-import type { UnreleasedMediaSummary } from "@/lib/types";
+import { Trash2, Music, Video, ImageIcon, Pencil } from "lucide-react";
+import type { UnreleasedAlbum, UnreleasedMediaSummary } from "@/lib/types";
 import { deleteUnreleasedMedia } from "./actions";
-import { AdminButton } from "./ui";
+import { AdminButton, AdminModal } from "./ui";
+import UnreleasedMediaEditForm from "./UnreleasedMediaEditForm";
 
 interface AdminUnreleasedTileProps {
   media: UnreleasedMediaSummary;
+  albums: UnreleasedAlbum[];
   onDeleted?: () => void;
+  onUpdated?: () => void;
 }
 
-export default function AdminUnreleasedTile({ media, onDeleted }: AdminUnreleasedTileProps) {
+export default function AdminUnreleasedTile({ media, albums, onDeleted, onUpdated }: AdminUnreleasedTileProps) {
   const [deleting, setDeleting] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   const handleDelete = async () => {
     if (!window.confirm(`Delete "${media.title}"?`)) return;
@@ -58,16 +62,35 @@ export default function AdminUnreleasedTile({ media, onDeleted }: AdminUnrelease
         </p>
       </div>
 
-      <AdminButton
-        type="button"
-        variant="danger"
-        onClick={handleDelete}
-        disabled={deleting}
-        className="w-full"
-      >
-        <Trash2 size={14} />
-        {deleting ? "Deleting..." : "Delete"}
-      </AdminButton>
+      <div className="grid grid-cols-2 gap-2">
+        <AdminButton type="button" variant="secondary" onClick={() => setEditing(true)} className="w-full">
+          <Pencil size={14} />
+          Edit
+        </AdminButton>
+        <AdminButton
+          type="button"
+          variant="danger"
+          onClick={handleDelete}
+          disabled={deleting}
+          className="w-full"
+        >
+          <Trash2 size={14} />
+          {deleting ? "Deleting..." : "Delete"}
+        </AdminButton>
+      </div>
+
+      {editing && (
+        <AdminModal title="Edit media" onClose={() => setEditing(false)}>
+          <UnreleasedMediaEditForm
+            media={media}
+            albums={albums}
+            onSuccess={() => {
+              setEditing(false);
+              onUpdated?.();
+            }}
+          />
+        </AdminModal>
+      )}
     </div>
   );
 }
