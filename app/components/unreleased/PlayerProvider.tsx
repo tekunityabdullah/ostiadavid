@@ -37,6 +37,7 @@ interface PlayerContextValue {
   repeatMode: RepeatMode;
   playTrack: (track: UnreleasedMediaSummary) => void;
   togglePlay: () => void;
+  pause: () => void;
   seekTo: (time: number) => void;
   changeVolume: (v: number) => void;
   toggleMute: () => void;
@@ -205,6 +206,12 @@ export default function PlayerProvider({ children, audioTracks }: PlayerProvider
     else audio.pause();
   }, []);
 
+  // Always pauses (never toggles into playing) — used by a playing video
+  // to claim playback exclusivity, so audio and video never sound at once.
+  const pause = useCallback(() => {
+    audioRef.current?.pause();
+  }, []);
+
   const seekTo = useCallback((time: number) => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -313,6 +320,7 @@ export default function PlayerProvider({ children, audioTracks }: PlayerProvider
         repeatMode,
         playTrack,
         togglePlay,
+        pause,
         seekTo,
         changeVolume,
         toggleMute,

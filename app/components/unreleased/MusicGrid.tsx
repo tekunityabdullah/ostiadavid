@@ -93,7 +93,7 @@ export default function MusicGrid({ tracks, likedIds, onToggleLike, onRemove, hi
               )}
             </div>
 
-            <p className="truncate text-xs uppercase tracking-tight text-white">{track.title}</p>
+            <p className="truncate text-center text-xs uppercase tracking-tight text-white">{track.title}</p>
           </div>
         );
       })}

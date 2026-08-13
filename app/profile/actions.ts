@@ -1,9 +1,76 @@
 "use server";
 
+import Stripe from "stripe";
+import { revalidatePath } from "next/cache";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 
 const DIGITAL_DOWNLOADS_BUCKET = "digital-downloads";
 const SIGNED_URL_EXPIRY_SECONDS = 60 * 60 * 48; // 48 hours
+
+export interface CancelSubscriptionResult {
+  ok: boolean;
+  message: string;
+}
+
+// Cancels the member's recurring $9.99/mo Exclusive membership (created in
+// /api/exclusive-checkout) and immediately drops their account back to
+// 'regular' — no grace period, since Exclusive content access is gated
+// entirely on account_type, not on Stripe subscription status directly.
+export async function cancelExclusiveSubscription(): Promise<CancelSubscriptionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { ok: false, message: "Please log in." };
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("stripe_customer_id, account_type")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.account_type !== "exclusive") {
+    return { ok: false, message: "You don't have an active Exclusive membership." };
+  }
+
+  if (!profile?.stripe_customer_id) {
+    return { ok: false, message: "No billing record found for this account." };
+  }
+
+  try {
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+    const subscriptions = await stripe.subscriptions.list({
+      customer: profile.stripe_customer_id,
+      status: "active",
+      limit: 1,
+    });
+
+    if (subscriptions.data.length > 0) {
+      await stripe.subscriptions.cancel(subscriptions.data[0].id);
+    }
+  } catch (err) {
+    console.error("Failed to cancel Stripe subscription:", err);
+    return { ok: false, message: "Could not reach billing provider. Please try again." };
+  }
+
+  const serviceClient = await createServiceClient();
+  const { error } = await serviceClient
+    .from("profiles")
+    .update({ account_type: "regular" })
+    .eq("id", user.id);
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+
+  revalidatePath("/profile");
+  revalidatePath("/exclusive");
+
+  return { ok: true, message: "Your Exclusive membership has been cancelled." };
+}
 
 export interface DownloadUrlResult {
   url: string | null;

@@ -9,7 +9,14 @@ import type { Order, OrderItem, Profile } from "@/lib/types";
 import ProfileActions from "./ProfileActions";
 import DownloadButton from "./DownloadButton";
 
-export default async function ProfilePage() {
+interface ProfilePageProps {
+  searchParams: Promise<{ scope?: string }>;
+}
+
+export default async function ProfilePage({ searchParams }: ProfilePageProps) {
+  const { scope } = await searchParams;
+  const isExclusiveScope = scope === "exclusive";
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -36,6 +43,7 @@ export default async function ProfilePage() {
   const orderIds = typedOrders.map((o) => o.id);
   let orderItemsMap: Record<string, OrderItem[]> = {};
   let digitalItems: OrderItem[] = [];
+  let exclusiveOrderIds = new Set<string>();
 
   if (orderIds.length > 0) {
     const { data: orderItems } = await supabase
@@ -59,21 +67,36 @@ export default async function ProfilePage() {
     ] as string[];
 
     if (productIds.length > 0) {
-      const { data: digitalProducts } = await supabase
+      const { data: productFlags } = await supabase
         .from("products")
-        .select("id")
-        .eq("is_digital", true)
+        .select("id, is_digital, is_exclusive")
         .in("id", productIds);
 
       const digitalProductIds = new Set(
-        (digitalProducts ?? []).map((p) => p.id)
+        (productFlags ?? []).filter((p) => p.is_digital).map((p) => p.id)
+      );
+      const exclusiveProductIds = new Set(
+        (productFlags ?? []).filter((p) => p.is_exclusive).map((p) => p.id)
       );
 
       digitalItems = typedOrderItems.filter(
         (i) => i.product_id && digitalProductIds.has(i.product_id)
       );
+
+      // An order counts as "Exclusive" if any line in it is an exclusive
+      // product — matches how the Exclusive account menu's "See Orders"
+      // should only surface Exclusive purchases, never regular-site ones.
+      exclusiveOrderIds = new Set(
+        typedOrderItems
+          .filter((i) => i.product_id && exclusiveProductIds.has(i.product_id))
+          .map((i) => i.order_id)
+      );
     }
   }
+
+  const visibleOrders = isExclusiveScope
+    ? typedOrders.filter((o) => exclusiveOrderIds.has(o.id))
+    : typedOrders.filter((o) => !exclusiveOrderIds.has(o.id));
 
   const joinedDate = typedProfile?.created_at
     ? new Date(typedProfile.created_at).toLocaleDateString("en-US", {
@@ -153,15 +176,15 @@ export default async function ProfilePage() {
 
               <div className="border border-white/20 p-6 flex flex-col gap-4">
                 <h2 className="text-sm uppercase tracking-tight font-medium text-white">
-                  Order History
+                  {isExclusiveScope ? "Exclusive Order History" : "Order History"}
                 </h2>
 
-                {typedOrders.length === 0 ? (
+                {visibleOrders.length === 0 ? (
                   <p className="text-xs text-white/40 uppercase tracking-tight">
-                    No orders yet
+                    {isExclusiveScope ? "No exclusive orders yet" : "No orders yet"}
                   </p>
                 ) : (
-                  typedOrders.map((order) => {
+                  visibleOrders.map((order) => {
                     const items = orderItemsMap[order.id] ?? [];
                     const itemNames = items
                       .map((i) => `${i.product_name} ×${i.quantity}`)

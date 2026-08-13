@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import Header from "../components/Header";
 import SubNav from "../components/SubNav";
 import Footer from "../components/Footer";
@@ -10,10 +11,19 @@ import { useCart } from "@/lib/cart-context";
 import { formatPrice } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 
-export default function CartPage() {
-  const { items, subtotal, updateQuantity, removeItem, clearCart } = useCart();
+function CartPageContent() {
+  const { items: allItems, updateQuantity, removeItem } = useCart();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const isExclusive = useSearchParams().get("scope") === "exclusive";
+
+  // One shared cart store, but Exclusive and the regular site never show
+  // each other's items — same separation as the header's cart badge.
+  const items = useMemo(
+    () => allItems.filter((i) => Boolean(i.isExclusive) === isExclusive),
+    [allItems, isExclusive]
+  );
+  const subtotal = useMemo(() => items.reduce((sum, i) => sum + i.price * i.quantity, 0), [items]);
 
   useEffect(() => {
     async function checkAuth() {
@@ -37,7 +47,7 @@ export default function CartPage() {
       <main className="pt-32 flex justify-center w-full max-w-[1400px] mx-auto flex-1">
         <section className="flex flex-col items-center px-4 pt-6 pb-8 w-full">
           <h1 className="text-2xl md:text-4xl lg:text-5xl font-medium uppercase tracking-wide text-white mb-8 text-center">
-            Cart
+            {isExclusive ? "Exclusive Cart" : "Cart"}
           </h1>
 
           {items.length === 0 ? (
@@ -46,7 +56,7 @@ export default function CartPage() {
                 Your cart is empty
               </p>
               <Link
-                href="/"
+                href={isExclusive ? "/exclusive" : "/"}
                 className="px-8 py-2 text-xs uppercase tracking-tight font-medium text-black bg-white no-underline transition-colors duration-200 hover:bg-[#e5e5e5] active:scale-95"
               >
                 Continue Shopping
@@ -140,12 +150,15 @@ export default function CartPage() {
                     <InlineCheckout
                       items={items}
                       onSuccess={() => {
-                        clearCart();
-                        window.location.href = "/cart?success=true";
+                        // Only clear the items belonging to this scope —
+                        // the other side's cart (regular vs. exclusive)
+                        // must survive a checkout on this one.
+                        items.forEach((item) => removeItem(item.productId, item.variantId));
+                        window.location.href = `/cart${isExclusive ? "?scope=exclusive&" : "?"}success=true`;
                       }}
                     />
                     <Link
-                      href="/"
+                      href={isExclusive ? "/exclusive" : "/"}
                       className="text-center text-xs uppercase tracking-tight text-white/50 hover:text-white transition-colors no-underline"
                     >
                       Continue Shopping
@@ -198,5 +211,13 @@ export default function CartPage() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function CartPage() {
+  return (
+    <Suspense fallback={null}>
+      <CartPageContent />
+    </Suspense>
   );
 }

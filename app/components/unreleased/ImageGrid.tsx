@@ -92,7 +92,7 @@ export default function ImageGrid({ images, likedIds, onToggleLike, onRemove, hi
               )}
             </div>
 
-            <p className="truncate text-xs uppercase tracking-tight text-white">{image.title}</p>
+            <p className="truncate text-center text-xs uppercase tracking-tight text-white">{image.title}</p>
           </div>
         );
       })}

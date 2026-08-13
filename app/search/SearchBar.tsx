@@ -3,7 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function SearchBar({ defaultValue }: { defaultValue: string }) {
+export default function SearchBar({
+  defaultValue,
+  scope,
+}: {
+  defaultValue: string;
+  /** Carries the current exclusive/regular scope forward on a re-search. */
+  scope?: "exclusive";
+}) {
   const router = useRouter();
   const [query, setQuery] = useState(defaultValue);
 
@@ -11,7 +18,8 @@ export default function SearchBar({ defaultValue }: { defaultValue: string }) {
     e.preventDefault();
     const q = query.trim();
     if (!q) return;
-    router.push(`/search?q=${encodeURIComponent(q)}`);
+    const scopeParam = scope === "exclusive" ? "&scope=exclusive" : "";
+    router.push(`/search?q=${encodeURIComponent(q)}${scopeParam}`);
   };
 
   return (

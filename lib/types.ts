@@ -37,6 +37,10 @@ export interface CartItem {
   image: string;
   quantity: number;
   isDigital?: boolean;
+  // Mirrors the source product's is_exclusive flag — lets the cart, its
+  // header badge, and checkout stay scoped separately for the Exclusive
+  // section vs. the regular site, even though both share one cart store.
+  isExclusive?: boolean;
 }
 
 export interface ShippingAddress {

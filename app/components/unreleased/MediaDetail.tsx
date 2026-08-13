@@ -34,7 +34,7 @@ export default function MediaDetail({ item, related, initialStreamUrl }: MediaDe
     <div className="w-full max-w-[900px]">
       <Link
         href="/exclusive?tab=unreleased"
-        className="mb-8 inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.2em] text-white/40 transition hover:text-white"
+        className="mb-8 inline-flex items-center gap-1 font-sans text-[11px] uppercase text-white/40 transition hover:text-white"
       >
         <ChevronLeft size={14} />
         Unreleased
@@ -60,7 +60,7 @@ export default function MediaDetail({ item, related, initialStreamUrl }: MediaDe
             </h2>
           )}
           {item.media_type === "video" ? (
-            <VideoGrid videos={related} likedIds={liked} onToggleLike={toggleLike} twoColumn />
+            <VideoGrid videos={related} twoColumn hideActions />
           ) : item.media_type === "image" ? (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
               {related.map((img) => (
@@ -109,6 +109,7 @@ function AudioDetail({ item }: { item: UnreleasedMediaSummary }) {
   const isActive = currentTrack?.id === item.id;
   const displayTime = isActive ? currentTime : 0;
   const displayDuration = isActive ? duration : item.duration_seconds ?? 0;
+  const progressPercent = displayDuration ? (displayTime / displayDuration) * 100 : 0;
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col items-center gap-6 pt-2">
@@ -136,7 +137,7 @@ function AudioDetail({ item }: { item: UnreleasedMediaSummary }) {
         </button>
       </div>
 
-      <h1 className="w-full text-left text-lg font-medium uppercase tracking-wide text-white sm:text-xl">
+      <h1 className="w-full text-center text-lg font-medium uppercase tracking-wide text-white sm:text-xl">
         {item.title}
       </h1>
 
@@ -153,7 +154,10 @@ function AudioDetail({ item }: { item: UnreleasedMediaSummary }) {
             if (!isActive) playTrack(item);
             seekTo(Number(e.target.value));
           }}
-          className="h-1 w-full cursor-pointer accent-white"
+          className="slim-range w-full text-white"
+          style={{
+            background: `linear-gradient(to right, white ${progressPercent}%, rgba(255,255,255,0.25) ${progressPercent}%)`,
+          }}
         />
         <span className="w-8 shrink-0 text-right text-[10px] tabular-nums text-white/40">
           {formatTime(displayDuration)}
@@ -187,6 +191,15 @@ function AudioDetail({ item }: { item: UnreleasedMediaSummary }) {
           className="p-2 text-white/70 transition hover:text-white"
         >
           <SkipForward size={20} fill="currentColor" />
+        </button>
+      </div>
+
+      <div className="flex w-full justify-end">
+        <button
+          type="button"
+          className="text-xs font-medium uppercase tracking-tight text-white transition hover:opacity-70"
+        >
+          Add to Cart
         </button>
       </div>
     </div>
@@ -229,6 +242,18 @@ function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initi
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+
+  // Audio and video are never allowed to play at once: starting this video
+  // pauses the global audio player, and if audio is resumed elsewhere (the
+  // sticky bottom bar persists across pages) while this video is playing,
+  // this video gets paused in turn.
+  const { isPlaying: audioIsPlaying, pause: pauseAudio } = useUnreleasedPlayer();
+
+  useEffect(() => {
+    if (audioIsPlaying) {
+      videoRef.current?.pause();
+    }
+  }, [audioIsPlaying]);
 
   useEffect(() => {
     if (initialUrl) {
@@ -273,6 +298,7 @@ function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initi
   };
 
   const remaining = Math.max(0, (duration || 0) - currentTime);
+  const progressPercent = duration ? (currentTime / duration) * 100 : 0;
 
   return (
     <div>
@@ -286,8 +312,12 @@ function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initi
                 ref={videoRef}
                 src={url}
                 autoPlay
+                playsInline
                 onClick={togglePlay}
-                onPlay={() => setIsPlaying(true)}
+                onPlay={() => {
+                  setIsPlaying(true);
+                  pauseAudio();
+                }}
                 onPause={() => setIsPlaying(false)}
                 onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
                 onLoadedMetadata={(e) => setDuration(e.currentTarget.duration || 0)}
@@ -297,17 +327,10 @@ function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initi
                 className="h-full w-full cursor-pointer"
               />
 
-              {/* Title overlay */}
-              <div className="pointer-events-none absolute inset-x-0 top-0 bg-gradient-to-b from-black/70 to-transparent px-4 py-3">
-                <p className="text-sm font-medium uppercase tracking-wide text-white sm:text-base">
-                  {item.title}
-                </p>
-              </div>
-
               {/* Floating control card, centered within the video like the reference design */}
-              <div className="absolute bottom-3 left-1/2 w-[70%] max-w-xs -translate-x-1/2 rounded-md bg-white px-3 py-2 sm:bottom-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-[9px] tabular-nums text-black/60">
+              <div className="absolute bottom-3 left-1/2 w-[55%] max-w-[200px] -translate-x-1/2 rounded-md bg-white px-2.5 py-1.5 sm:bottom-4">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[8px] tabular-nums text-black/60">
                     {formatTime(currentTime)}
                   </span>
                   <input
@@ -320,19 +343,22 @@ function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initi
                       if (video) video.currentTime = Number(e.target.value);
                       setCurrentTime(Number(e.target.value));
                     }}
-                    className="h-1 w-full cursor-pointer accent-black"
+                    className="slim-range w-full text-black"
+                    style={{
+                      background: `linear-gradient(to right, black ${progressPercent}%, rgba(0,0,0,0.2) ${progressPercent}%)`,
+                    }}
                   />
-                  <span className="text-[9px] tabular-nums text-black/60">
+                  <span className="text-[8px] tabular-nums text-black/60">
                     -{formatTime(remaining)}
                   </span>
                 </div>
-                <div className="mt-1 flex items-center justify-center gap-5">
+                <div className="mt-0.5 flex items-center justify-center gap-3">
                   <button
                     onClick={() => skip(-10)}
                     aria-label="Back 10 seconds"
                     className="text-black/70 transition hover:text-black"
                   >
-                    <SkipBack size={14} fill="currentColor" />
+                    <SkipBack size={11} fill="currentColor" />
                   </button>
                   <button
                     onClick={togglePlay}
@@ -340,9 +366,9 @@ function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initi
                     className="text-black transition hover:opacity-70"
                   >
                     {isPlaying ? (
-                      <Pause size={16} fill="black" />
+                      <Pause size={13} fill="black" />
                     ) : (
-                      <Play size={16} fill="black" className="ml-0.5" />
+                      <Play size={13} fill="black" className="ml-0.5" />
                     )}
                   </button>
                   <button
@@ -350,7 +376,7 @@ function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initi
                     aria-label="Forward 10 seconds"
                     className="text-black/70 transition hover:text-black"
                   >
-                    <SkipForward size={14} fill="currentColor" />
+                    <SkipForward size={11} fill="currentColor" />
                   </button>
                 </div>
               </div>
@@ -371,6 +397,15 @@ function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initi
             <Download size={22} strokeWidth={1.5} />
           </a>
         )}
+      </div>
+
+      <div className="mt-4 flex justify-end">
+        <button
+          type="button"
+          className="text-xs font-medium uppercase tracking-tight text-white transition hover:opacity-70"
+        >
+          Add to Cart
+        </button>
       </div>
     </div>
   );

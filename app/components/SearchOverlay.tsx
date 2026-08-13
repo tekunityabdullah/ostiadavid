@@ -1,12 +1,16 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 const TRANSITION_MS = 200;
 
 export default function SearchOverlay() {
   const router = useRouter();
+  // Suspense-safe (pathname only, no useSearchParams — see HeaderActions)
+  // — searching from inside Exclusive should only ever search Exclusive
+  // content, never the regular site's catalog.
+  const isExclusive = usePathname()?.startsWith("/exclusive") ?? false;
   const [isMounted, setIsMounted] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [query, setQuery] = useState("");
@@ -74,7 +78,8 @@ export default function SearchOverlay() {
     const q = query.trim();
     if (!q) return;
     close();
-    router.push(`/search?q=${encodeURIComponent(q)}`);
+    const scopeParam = isExclusive ? "&scope=exclusive" : "";
+    router.push(`/search?q=${encodeURIComponent(q)}${scopeParam}`);
   };
 
   return (

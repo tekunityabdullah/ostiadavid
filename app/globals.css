@@ -31,3 +31,70 @@ body {
   touch-action: manipulation;
   overflow-x: hidden;
 }
+
+/* Thin, cross-browser-consistent playback slider — resets the browser's
+   default range-input rendering (thick on iOS Safari in particular) so the
+   track and thumb come out a fixed, small size everywhere. The filled
+   progress portion is painted via an inline background gradient set at the
+   call site (its % depends on playback position), not by this class. */
+.slim-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 1.5px;
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+}
+
+.slim-range::-webkit-slider-runnable-track {
+  height: 1.5px;
+  border-radius: 9999px;
+  background: transparent;
+}
+
+.slim-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 6px;
+  height: 6px;
+  margin-top: -2.25px;
+  border-radius: 50%;
+  background: currentColor;
+  cursor: pointer;
+}
+
+.slim-range::-moz-range-track {
+  height: 1.5px;
+  border-radius: 9999px;
+  background: transparent;
+}
+
+.slim-range::-moz-range-thumb {
+  width: 6px;
+  height: 6px;
+  border: none;
+  border-radius: 50%;
+  background: currentColor;
+  cursor: pointer;
+}
+
+/* Scaled down further on mobile — a 6px thumb reads fine on a laptop but
+   is disproportionately large on a phone-width Now Playing/video card. */
+@media (max-width: 640px) {
+  .slim-range,
+  .slim-range::-webkit-slider-runnable-track,
+  .slim-range::-moz-range-track {
+    height: 1px;
+  }
+
+  .slim-range::-webkit-slider-thumb {
+    width: 5px;
+    height: 5px;
+    margin-top: -2px;
+  }
+
+  .slim-range::-moz-range-thumb {
+    width: 5px;
+    height: 5px;
+  }
+}

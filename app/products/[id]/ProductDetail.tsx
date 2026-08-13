@@ -93,6 +93,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
       image: displayImage ?? "",
       quantity: product.is_digital ? 1 : quantity,
       isDigital: product.is_digital,
+      isExclusive: product.is_exclusive,
     };
   }
 

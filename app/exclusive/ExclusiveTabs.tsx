@@ -65,8 +65,8 @@ export default function ExclusiveTabs({ products, media, events }: ExclusiveTabs
           <button
             key={value}
             onClick={() => selectTab(value)}
-            className={`uppercase tracking-[0.2em] transition ${
-              tab === value ? "font-semibold text-white" : "font-normal text-white/40 hover:text-white/70"
+            className={`font-sans uppercase transition ${
+              tab === value ? "text-white" : "text-white/40 hover:text-white/70"
             }`}
           >
             {label}
@@ -85,8 +85,8 @@ export default function ExclusiveTabs({ products, media, events }: ExclusiveTabs
             <button
               key={value}
               onClick={() => setEventFilter(value)}
-              className={`uppercase tracking-[0.2em] transition ${
-                eventFilter === value ? "font-semibold text-white" : "font-normal text-white/40 hover:text-white/70"
+              className={`font-sans uppercase transition ${
+                eventFilter === value ? "text-white" : "text-white/40 hover:text-white/70"
               }`}
             >
               {label}
