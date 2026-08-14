@@ -109,7 +109,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           ) : (
             <>
               <p className="text-sm text-white/50 uppercase tracking-tight mb-10 text-center">
-                No results for &ldquo;{query}&rdquo; — browse our full collection below.
+                No results for &ldquo;{query}&rdquo;.{!isExclusive && " Check exclusive."}
               </p>
               {products.length > 0 && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full px-3 md:px-[60px]">

@@ -106,47 +106,55 @@ export default function SearchOverlay() {
             isVisible ? "opacity-100" : "opacity-0"
           }`}
         >
-          <button
-            onClick={close}
-            className="absolute right-4 top-5 sm:right-6 text-white/60 p-1 transition-opacity duration-200 hover:opacity-70 active:scale-95 [&_svg]:w-5 [&_svg]:h-5"
-            aria-label="Close search"
-          >
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-
           <div className="mx-auto w-full max-w-[1000px] px-4 sm:px-6 py-6">
-            <form
-              onSubmit={handleSubmit}
-              className="mx-auto flex w-full max-w-[600px] items-center gap-3 border border-white/25 bg-black px-4 h-12 transition-colors focus-within:border-white"
-            >
-              <input
-                ref={inputRef}
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="SEARCH"
-                aria-label="Search"
-                autoComplete="off"
-                spellCheck={false}
-                className="flex-1 min-w-0 bg-transparent border-0 text-white text-sm font-sans uppercase tracking-tight outline-none placeholder:text-white/40"
-              />
-              <button
-                type="submit"
-                aria-label="Search"
-                className="text-white/50 shrink-0 transition-opacity duration-200 hover:opacity-70 active:scale-95 [&_svg]:w-4 [&_svg]:h-4"
+            {/* Shares the search bar's own max-width (not the wider overlay
+                container), so the close button sits directly above the bar
+                at every screen size instead of drifting off to the right
+                on wide screens. */}
+            <div className="mx-auto w-full max-w-[600px]">
+              <div className="mb-4 flex justify-end">
+                <button
+                  onClick={close}
+                  className="text-white/60 p-1 transition-opacity duration-200 hover:opacity-70 active:scale-95 [&_svg]:w-5 [&_svg]:h-5"
+                  aria-label="Close search"
+                >
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              <form
+                onSubmit={handleSubmit}
+                className="flex w-full items-center gap-3 border border-white/25 bg-black px-4 h-12 transition-colors focus-within:border-white"
               >
-                <svg viewBox="0 0 256 256" fill="currentColor">
-                  <path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z" />
-                </svg>
-              </button>
-            </form>
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="SEARCH"
+                  aria-label="Search"
+                  autoComplete="off"
+                  spellCheck={false}
+                  className="flex-1 min-w-0 bg-transparent border-0 text-white text-sm font-sans uppercase tracking-tight outline-none placeholder:text-white/40"
+                />
+                <button
+                  type="submit"
+                  aria-label="Search"
+                  className="text-white/50 shrink-0 transition-opacity duration-200 hover:opacity-70 active:scale-95 [&_svg]:w-4 [&_svg]:h-4"
+                >
+                  <svg viewBox="0 0 256 256" fill="currentColor">
+                    <path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z" />
+                  </svg>
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       )}

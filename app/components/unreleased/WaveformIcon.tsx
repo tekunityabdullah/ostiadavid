@@ -1,8 +1,10 @@
-// A static, decorative "audio pulse" glyph used as the placeholder for
-// tracks without cover art — both the small grid tiles and the large
-// Now Playing view use this, colored via currentColor (pass a text-white/*
-// className to the wrapper). Pass `fill` to scale it up to its container
-// (like object-cover on a real image) instead of a fixed pixel `size`.
+// The client-provided placeholder banner used for tracks without cover art
+// — both the small grid tiles and the large Now Playing view use this.
+// Pass `fill` to scale it up to its container (like object-cover on a real
+// image) instead of a fixed pixel `size`. The image already has its own
+// black background and gray waveform baked in, so unlike the SVG this
+// replaced, `className` color utilities (e.g. text-gray-400) no longer do
+// anything — harmless to still pass, just inert.
 export default function WaveformIcon({
   size = 40,
   fill = false,
@@ -13,21 +15,13 @@ export default function WaveformIcon({
   className?: string;
 }) {
   return (
-    <svg
-      {...(fill ? { width: "100%", height: "100%" } : { width: size, height: size })}
-      viewBox="0 0 200 160"
-      fill="none"
-      preserveAspectRatio="xMidYMid meet"
-      className={className}
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/audio-placeholder.png"
+      alt=""
       aria-hidden="true"
-    >
-      <path
-        d="M10 100 L50 100 L70 40 L90 130 L100 20 L110 130 L130 40 L150 100 L190 100"
-        stroke="currentColor"
-        strokeWidth={10}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+      style={fill ? undefined : { width: size, height: size }}
+      className={`${fill ? "h-full w-full" : ""} object-cover ${className}`}
+    />
   );
 }

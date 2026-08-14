@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   Download,
   ImageIcon,
+  Maximize,
   Pause,
   Play,
   Shuffle,
@@ -118,28 +119,25 @@ function AudioDetail({ item }: { item: UnreleasedMediaSummary }) {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={item.cover_image} alt={item.title} className="h-full w-full object-cover" />
         ) : (
-          <div className="flex h-full w-full items-center justify-center p-14">
-            <WaveformIcon fill className="text-gray-400" />
-          </div>
+          <WaveformIcon fill />
         )}
       </div>
 
-      <div className="flex w-full justify-end">
+      <div className="flex w-full items-center justify-between">
+        <h1 className="text-left text-lg font-medium uppercase tracking-wide text-white sm:text-xl">
+          {item.title}
+        </h1>
         <button
           onClick={toggleShuffle}
           aria-pressed={shuffle}
           aria-label="Shuffle"
-          className={`-mb-3 p-1.5 transition hover:opacity-80 ${
+          className={`shrink-0 p-1.5 transition hover:opacity-80 ${
             shuffle ? "text-white" : "text-white/40"
           }`}
         >
           <Shuffle size={18} />
         </button>
       </div>
-
-      <h1 className="w-full text-center text-lg font-medium uppercase tracking-wide text-white sm:text-xl">
-        {item.title}
-      </h1>
 
       <div className="flex w-full items-center gap-3">
         <span className="w-8 shrink-0 text-[10px] tabular-nums text-white/40">
@@ -175,14 +173,14 @@ function AudioDetail({ item }: { item: UnreleasedMediaSummary }) {
         <button
           onClick={() => playTrack(item)}
           aria-label={isActive && isPlaying ? "Pause" : "Play"}
-          className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-black shadow-[0_8px_30px_rgba(255,255,255,0.15)] transition hover:scale-105 active:scale-95"
+          className="p-2 text-white transition hover:opacity-70"
         >
           {isActive && isLoading ? (
-            <span className="block h-3 w-3 animate-pulse rounded-full bg-black/50" />
+            <span className="block h-5 w-5 animate-pulse rounded-full bg-white/40" />
           ) : isActive && isPlaying ? (
-            <Pause size={22} fill="black" />
+            <Pause size={28} fill="white" />
           ) : (
-            <Play size={22} fill="black" className="ml-1" />
+            <Play size={28} fill="white" />
           )}
         </button>
         <button
@@ -243,6 +241,28 @@ function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initi
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
+  // YouTube-style controls: tapping the video toggles whether the overlay
+  // (title, progress card, fullscreen button) is shown — it never
+  // pauses/plays. Only the dedicated play/pause button does that. While
+  // playing, the overlay auto-hides after a few seconds like a real
+  // player; while paused, it always stays visible.
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearHideTimer = () => {
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
+    }
+  };
+
+  const scheduleAutoHide = () => {
+    clearHideTimer();
+    hideTimerRef.current = setTimeout(() => setControlsVisible(false), 3000);
+  };
+
+  useEffect(() => clearHideTimer, []);
+
   // Audio and video are never allowed to play at once: starting this video
   // pauses the global audio player, and if audio is resumed elsewhere (the
   // sticky bottom bar persists across pages) while this video is playing,
@@ -291,10 +311,39 @@ function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initi
     else video.pause();
   };
 
+  // Tapping the video itself only shows/hides the overlay — it never
+  // touches playback.
+  const handleVideoTap = () => {
+    setControlsVisible((prev) => {
+      const next = !prev;
+      if (next && isPlaying) scheduleAutoHide();
+      else clearHideTimer();
+      return next;
+    });
+  };
+
   const skip = (seconds: number) => {
     const video = videoRef.current;
     if (!video) return;
     video.currentTime = Math.min(Math.max(0, video.currentTime + seconds), video.duration || 0);
+  };
+
+  // A real, explicit fullscreen toggle — separate from the iOS
+  // auto-fullscreen-on-play behavior that playsInline already suppresses.
+  // Safari on iOS doesn't support the standard Fullscreen API on arbitrary
+  // elements, only a video-specific one, so both paths are covered.
+  const toggleFullscreen = () => {
+    const video = videoRef.current as
+      | (HTMLVideoElement & { webkitEnterFullscreen?: () => void })
+      | null;
+    if (!video) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else if (video.requestFullscreen) {
+      video.requestFullscreen();
+    } else if (video.webkitEnterFullscreen) {
+      video.webkitEnterFullscreen();
+    }
   };
 
   const remaining = Math.max(0, (duration || 0) - currentTime);
@@ -313,12 +362,17 @@ function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initi
                 src={url}
                 autoPlay
                 playsInline
-                onClick={togglePlay}
+                onClick={handleVideoTap}
                 onPlay={() => {
                   setIsPlaying(true);
                   pauseAudio();
+                  scheduleAutoHide();
                 }}
-                onPause={() => setIsPlaying(false)}
+                onPause={() => {
+                  setIsPlaying(false);
+                  setControlsVisible(true);
+                  clearHideTimer();
+                }}
                 onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
                 onLoadedMetadata={(e) => setDuration(e.currentTarget.duration || 0)}
                 controlsList="nodownload noremoteplayback"
@@ -327,10 +381,25 @@ function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initi
                 className="h-full w-full cursor-pointer"
               />
 
-              {/* Floating control card, centered within the video like the reference design */}
-              <div className="absolute bottom-3 left-1/2 w-[55%] max-w-[200px] -translate-x-1/2 rounded-md bg-white px-2.5 py-1.5 sm:bottom-4">
+              {/* Title overlay, only while the controls are shown */}
+              <div
+                className={`pointer-events-none absolute inset-x-0 top-0 bg-gradient-to-b from-black/70 to-transparent px-4 py-3 transition-opacity duration-300 ${
+                  controlsVisible ? "opacity-100" : "opacity-0"
+                }`}
+              >
+                <p className="text-sm font-medium uppercase tracking-wide text-white sm:text-base">
+                  {item.title}
+                </p>
+              </div>
+
+              {/* Floating control card, centered within the video like the reference design — a translucent dark pill, not a solid white block, so it sits on the video instead of standing out as a box. */}
+              <div
+                className={`absolute bottom-3 left-1/2 w-[55%] max-w-[200px] -translate-x-1/2 rounded-md bg-black/50 px-2.5 py-1.5 backdrop-blur-sm transition-opacity duration-300 sm:bottom-4 ${
+                  controlsVisible ? "opacity-100" : "pointer-events-none opacity-0"
+                }`}
+              >
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[8px] tabular-nums text-black/60">
+                  <span className="text-[8px] tabular-nums text-white/70">
                     {formatTime(currentTime)}
                   </span>
                   <input
@@ -343,12 +412,12 @@ function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initi
                       if (video) video.currentTime = Number(e.target.value);
                       setCurrentTime(Number(e.target.value));
                     }}
-                    className="slim-range w-full text-black"
+                    className="slim-range w-full text-white"
                     style={{
-                      background: `linear-gradient(to right, black ${progressPercent}%, rgba(0,0,0,0.2) ${progressPercent}%)`,
+                      background: `linear-gradient(to right, white ${progressPercent}%, rgba(255,255,255,0.3) ${progressPercent}%)`,
                     }}
                   />
-                  <span className="text-[8px] tabular-nums text-black/60">
+                  <span className="text-[8px] tabular-nums text-white/70">
                     -{formatTime(remaining)}
                   </span>
                 </div>
@@ -356,25 +425,25 @@ function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initi
                   <button
                     onClick={() => skip(-10)}
                     aria-label="Back 10 seconds"
-                    className="text-black/70 transition hover:text-black"
+                    className="text-white/70 transition hover:text-white"
                   >
                     <SkipBack size={11} fill="currentColor" />
                   </button>
                   <button
                     onClick={togglePlay}
                     aria-label={isPlaying ? "Pause" : "Play"}
-                    className="text-black transition hover:opacity-70"
+                    className="text-white transition hover:opacity-70"
                   >
                     {isPlaying ? (
-                      <Pause size={13} fill="black" />
+                      <Pause size={13} fill="white" />
                     ) : (
-                      <Play size={13} fill="black" className="ml-0.5" />
+                      <Play size={13} fill="white" className="ml-0.5" />
                     )}
                   </button>
                   <button
                     onClick={() => skip(10)}
                     aria-label="Forward 10 seconds"
-                    className="text-black/70 transition hover:text-black"
+                    className="text-white/70 transition hover:text-white"
                   >
                     <SkipForward size={11} fill="currentColor" />
                   </button>
@@ -386,16 +455,20 @@ function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initi
           )}
         </div>
 
-        {/* Download icon, in line with the control card's bottom edge */}
+        {/* Fullscreen toggle, in line with the control card's bottom edge —
+            explicit and user-initiated, unlike the auto-fullscreen iOS used
+            to force on play (now suppressed via playsInline). */}
         {url && !error && (
-          <a
-            href={url}
-            download
-            aria-label="Download video"
-            className="absolute bottom-3 right-3 text-white/80 transition hover:text-white sm:bottom-4 sm:right-4"
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            aria-label="Fullscreen"
+            className={`absolute bottom-3 right-3 text-white/80 transition-opacity duration-300 hover:text-white sm:bottom-4 sm:right-4 ${
+              controlsVisible ? "opacity-100" : "pointer-events-none opacity-0"
+            }`}
           >
-            <Download size={22} strokeWidth={1.5} />
-          </a>
+            <Maximize size={22} strokeWidth={1.5} />
+          </button>
         )}
       </div>
 

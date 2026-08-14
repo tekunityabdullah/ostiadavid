@@ -21,7 +21,7 @@ export default function MusicGrid({ tracks, likedIds, onToggleLike, onRemove, hi
   if (!tracks.length) return null;
 
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+    <div className="grid grid-cols-3 gap-2 sm:gap-4">
       {tracks.map((track) => {
         const isLiked = likedIds?.has(track.id) ?? false;
         const openDetail = () => router.push(`/unreleased/${track.id}`);
@@ -49,9 +49,7 @@ export default function MusicGrid({ tracks, likedIds, onToggleLike, onRemove, hi
                   className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center p-10">
-                  <WaveformIcon fill className="text-gray-400" />
-                </div>
+                <WaveformIcon fill className="transition-transform duration-500 ease-out group-hover:scale-[1.05]" />
               )}
 
               {!hideActions && onToggleLike && (

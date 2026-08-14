@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import { Heart, Play, Video as VideoIcon, X } from "lucide-react";
 import type { UnreleasedMediaSummary } from "@/lib/types";
-import { formatTime } from "./format";
 import AddToPlaylistMenu from "./AddToPlaylistMenu";
 import { getYouTubeThumbnail } from "./youtube";
 
@@ -104,11 +103,6 @@ export default function VideoGrid({ videos, likedIds, onToggleLike, onRemove, tw
                 </button>
               )}
 
-              {video.duration_seconds != null && (
-                <span className="absolute bottom-1.5 right-1.5 bg-black/85 px-1.5 py-0.5 text-[10px] tabular-nums text-white">
-                  {formatTime(video.duration_seconds)}
-                </span>
-              )}
             </div>
 
             <p className="truncate text-center text-xs uppercase tracking-tight text-white">

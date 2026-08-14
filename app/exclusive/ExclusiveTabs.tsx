@@ -54,7 +54,7 @@ export default function ExclusiveTabs({ products, media, events }: ExclusiveTabs
 
   return (
     <div className="w-full">
-      <div className="mb-10 flex justify-center gap-8 text-xs sm:gap-14">
+      <div className="mb-8 flex w-full max-w-[900px] justify-between gap-6 text-xs mx-auto sm:justify-center sm:gap-14 md:gap-20 lg:gap-28">
         {(
           [
             ["clothes", "Clothes"],
@@ -75,7 +75,7 @@ export default function ExclusiveTabs({ products, media, events }: ExclusiveTabs
       </div>
 
       {tab === "events" && (
-        <div className="mb-10 flex justify-center gap-8 text-[11px]">
+        <div className="mb-10 flex w-full justify-center gap-16 px-6 text-[11px] sm:gap-24 md:gap-32 lg:gap-40">
           {(
             [
               ["upcoming", "Upcoming"],

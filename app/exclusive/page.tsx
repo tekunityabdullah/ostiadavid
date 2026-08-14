@@ -63,8 +63,8 @@ export default async function ExclusivePage() {
     <div className="min-h-screen bg-black text-white flex flex-col">
       <Header />
 
-      <main className="pt-24 flex justify-center w-full max-w-[1400px] mx-auto flex-1">
-        <section className="flex flex-col items-center px-4 pt-6 pb-8 w-full">
+      <main className="pt-20 flex justify-center w-full max-w-[1400px] mx-auto flex-1">
+        <section className="flex flex-col items-center px-4 pt-3 pb-8 w-full">
           <ExclusiveTabs products={products} media={media} events={events} />
         </section>
       </main>
