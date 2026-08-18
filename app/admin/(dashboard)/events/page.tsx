@@ -45,7 +45,12 @@ export default function AdminEventsPage() {
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
               {events.map((event) => (
-                <AdminEventTile key={event.id} event={event} onDeleted={loadEvents} />
+                <AdminEventTile
+                  key={event.id}
+                  event={event}
+                  onDeleted={loadEvents}
+                  onUpdated={loadEvents}
+                />
               ))}
             </div>
           )}

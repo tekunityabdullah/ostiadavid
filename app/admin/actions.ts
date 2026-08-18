@@ -34,13 +34,21 @@ export async function addProduct(
   const isExclusive = formData.get("is_exclusive") === "on";
   const isDigital = formData.get("is_digital") === "on";
   const digitalFilePath = String(formData.get("digital_file_path") ?? "").trim() || null;
-  const price = Number(priceValue);
+  const externalCheckoutUrl = String(formData.get("external_checkout_url") ?? "").trim() || null;
 
-  if (!name || !priceValue || !image) {
-    return { ok: false, message: "Name, price, and an image (upload or URL) are required." };
+  // Price is only required for products we actually sell ourselves — an
+  // external-checkout product can skip it (the other platform has its own).
+  if (!priceValue && !externalCheckoutUrl) {
+    return { ok: false, message: "Price is required unless this is an external checkout product." };
   }
 
-  if (!Number.isFinite(price) || price < 0) {
+  const price = priceValue ? Number(priceValue) : null;
+
+  if (!name || !image) {
+    return { ok: false, message: "Name and an image (upload or URL) are required." };
+  }
+
+  if (price !== null && (!Number.isFinite(price) || price < 0)) {
     return { ok: false, message: "Enter a valid price." };
   }
 
@@ -58,6 +66,7 @@ export async function addProduct(
     is_exclusive: isExclusive,
     is_digital: isDigital,
     digital_file_path: digitalFilePath,
+    external_checkout_url: externalCheckoutUrl,
   });
 
   if (error) {
@@ -93,17 +102,25 @@ export async function updateProduct(
   const isExclusive = formData.get("is_exclusive") === "on";
   const isDigital = formData.get("is_digital") === "on";
   const digitalFilePath = String(formData.get("digital_file_path") ?? "").trim() || null;
-  const price = Number(priceValue);
+  const externalCheckoutUrl = String(formData.get("external_checkout_url") ?? "").trim() || null;
 
   if (!productId) {
     return { ok: false, message: "Missing product." };
   }
 
-  if (!name || !priceValue || !image) {
-    return { ok: false, message: "Name, price, and an image (upload or URL) are required." };
+  // Price is only required for products we actually sell ourselves — an
+  // external-checkout product can skip it (the other platform has its own).
+  if (!priceValue && !externalCheckoutUrl) {
+    return { ok: false, message: "Price is required unless this is an external checkout product." };
   }
 
-  if (!Number.isFinite(price) || price < 0) {
+  const price = priceValue ? Number(priceValue) : null;
+
+  if (!name || !image) {
+    return { ok: false, message: "Name and an image (upload or URL) are required." };
+  }
+
+  if (price !== null && (!Number.isFinite(price) || price < 0)) {
     return { ok: false, message: "Enter a valid price." };
   }
 
@@ -123,6 +140,7 @@ export async function updateProduct(
       is_exclusive: isExclusive,
       is_digital: isDigital,
       digital_file_path: digitalFilePath,
+      external_checkout_url: externalCheckoutUrl,
     })
     .eq("id", productId);
 
@@ -389,6 +407,48 @@ export async function addAlbum(
   return { ok: true, message: "Album added." };
 }
 
+export async function updateAlbum(
+  _prevState: ProductFormState,
+  formData: FormData
+): Promise<ProductFormState> {
+  if (!(await isAdmin())) {
+    redirect("/admin/login");
+  }
+
+  const albumId = String(formData.get("album_id") ?? "").trim();
+  const title = String(formData.get("title") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+  const coverImage = String(formData.get("cover_image_url") ?? "").trim() || null;
+
+  if (!albumId) {
+    return { ok: false, message: "Missing album." };
+  }
+
+  if (!title) {
+    return { ok: false, message: "Album title is required." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("unreleased_albums")
+    .update({
+      title,
+      description: description || null,
+      cover_image: coverImage,
+    })
+    .eq("id", albumId);
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+
+  revalidatePath("/unreleased/albums");
+  revalidatePath("/exclusive");
+  revalidatePath("/admin");
+
+  return { ok: true, message: "Album updated." };
+}
+
 export async function deleteAlbum(formData: FormData) {
   if (!(await isAdmin())) {
     redirect("/admin/login");
@@ -451,6 +511,55 @@ export async function addEvent(
   revalidatePath("/admin");
 
   return { ok: true, message: "Event added." };
+}
+
+export async function updateEvent(
+  _prevState: ProductFormState,
+  formData: FormData
+): Promise<ProductFormState> {
+  if (!(await isAdmin())) {
+    redirect("/admin/login");
+  }
+
+  const eventId = String(formData.get("event_id") ?? "").trim();
+  const title = String(formData.get("title") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+  const eventDate = String(formData.get("event_date") ?? "").trim();
+  const eventTime = String(formData.get("event_time") ?? "").trim();
+  const location = String(formData.get("location") ?? "").trim();
+  const ticketUrl = String(formData.get("ticket_url") ?? "").trim();
+  const coverImage = String(formData.get("cover_image_url") ?? "").trim() || null;
+
+  if (!eventId) {
+    return { ok: false, message: "Missing event." };
+  }
+
+  if (!title || !eventDate) {
+    return { ok: false, message: "Title and date are required." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("events")
+    .update({
+      title,
+      description: description || null,
+      event_date: eventDate,
+      event_time: eventTime || null,
+      location: location || null,
+      ticket_url: ticketUrl || null,
+      cover_image: coverImage,
+    })
+    .eq("id", eventId);
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+
+  revalidatePath("/exclusive");
+  revalidatePath("/admin");
+
+  return { ok: true, message: "Event updated." };
 }
 
 export async function deleteEvent(formData: FormData) {

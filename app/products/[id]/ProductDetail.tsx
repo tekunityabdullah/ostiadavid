@@ -79,6 +79,10 @@ export default function ProductDetail({ product }: ProductDetailProps) {
 
   function getCartItem(): CartItem | null {
     if (variants.length && !selectedVariant) return null;
+    // No priced product can't be added to a cart — in practice this only
+    // happens for external-checkout products, which never show an Add to
+    // Cart/Quick Buy button in the first place.
+    if (displayPrice == null) return null;
 
     const variantLabel = selectedVariant
       ? [selectedVariant.color, selectedVariant.size].filter(Boolean).join(" / ")
@@ -152,7 +156,9 @@ export default function ProductDetail({ product }: ProductDetailProps) {
             <h1 className="text-lg md:text-2xl font-medium uppercase tracking-wide">
               {product.name}
             </h1>
-            <p className="text-base font-medium">{formatPrice(displayPrice)}</p>
+            {displayPrice != null && (
+              <p className="text-base font-medium">{formatPrice(displayPrice)}</p>
+            )}
 
             {colors.length > 0 && (
               <div className="flex flex-col items-center lg:items-start gap-2">
@@ -213,7 +219,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
               <p className="text-xs text-red-300">This option is currently out of stock.</p>
             )}
 
-           {!product.is_digital && (
+           {!product.external_checkout_url && !product.is_digital && (
              <div className="flex justify-center mt-4">
   <div className="flex items-center border border-white/20">
     <button
@@ -239,77 +245,93 @@ export default function ProductDetail({ product }: ProductDetailProps) {
 </div>
            )}
 
-            <div className="w-full flex flex-col sm:flex-row gap-3 max-w-sm">
-              <button
-                onClick={handleAddToCart}
-                disabled={selectedVariant ? !selectedVariant.available : false}
-                className="flex-1 px-8 py-3 text-xs uppercase tracking-tight font-medium text-white border-none cursor-pointer transition-colors duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            {product.external_checkout_url ? (
+              // Sold through another platform (e.g. Elastic Stage) that has
+              // no API to integrate with — send buyers there directly
+              // instead of our own cart/checkout.
+              <a
+                href={product.external_checkout_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full max-w-sm px-8 py-3 text-xs uppercase tracking-tight font-medium text-black bg-white border-none cursor-pointer transition-colors duration-200 hover:bg-[#e5e5e5] active:scale-95 text-center no-underline"
               >
-                {added ? "Added to Cart" : "Add to Cart"}
-              </button>
+                Buy Now
+              </a>
+            ) : (
+              <>
+                <div className="w-full flex flex-col sm:flex-row gap-3 max-w-sm">
+                  <button
+                    onClick={handleAddToCart}
+                    disabled={selectedVariant ? !selectedVariant.available : false}
+                    className="flex-1 px-8 py-3 text-xs uppercase tracking-tight font-medium text-white border-none cursor-pointer transition-colors duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {added ? "Added to Cart" : "Add to Cart"}
+                  </button>
 
-              <button
-                onClick={handleQuickBuy}
-                disabled={selectedVariant ? !selectedVariant.available : false}
-                className="flex-1 px-8 py-3 text-xs uppercase tracking-tight font-medium text-white bg-transparent cursor-pointer disabled:cursor-not-allowed"
-              >
-                Quick Buy
-              </button>
-            </div>
+                  <button
+                    onClick={handleQuickBuy}
+                    disabled={selectedVariant ? !selectedVariant.available : false}
+                    className="flex-1 px-8 py-3 text-xs uppercase tracking-tight font-medium text-white bg-transparent cursor-pointer disabled:cursor-not-allowed"
+                  >
+                    Quick Buy
+                  </button>
+                </div>
 
-            {quickBuyOpen && (
-              <div className="w-full max-w-sm mt-2">
-                {orderPlaced ? (
-                  <div className="border border-white/20 p-6 flex flex-col gap-3 items-center text-center">
-                    <p className="text-sm font-medium text-white">Order placed — thank you!</p>
-                    <p className="text-xs text-white/60">
-                      Your order is being processed. A confirmation will be sent to your email.
-                    </p>
-                    <button
-                      onClick={() => setQuickBuyOpen(false)}
-                      className="text-xs uppercase tracking-tight text-white/50 hover:text-white transition-colors underline"
-                    >
-                      Continue Shopping
-                    </button>
+                {quickBuyOpen && (
+                  <div className="w-full max-w-sm mt-2">
+                    {orderPlaced ? (
+                      <div className="border border-white/20 p-6 flex flex-col gap-3 items-center text-center">
+                        <p className="text-sm font-medium text-white">Order placed — thank you!</p>
+                        <p className="text-xs text-white/60">
+                          Your order is being processed. A confirmation will be sent to your email.
+                        </p>
+                        <button
+                          onClick={() => setQuickBuyOpen(false)}
+                          className="text-xs uppercase tracking-tight text-white/50 hover:text-white transition-colors underline"
+                        >
+                          Continue Shopping
+                        </button>
+                      </div>
+                    ) : authLoading ? (
+                      <div className="border border-white/20 p-6 flex items-center justify-center">
+                        <p className="text-sm text-white/50">Loading...</p>
+                      </div>
+                    ) : !user ? (
+                      <div className="border border-white/20 p-6 flex flex-col gap-3">
+                        <p className="text-sm text-white text-center uppercase tracking-tight">
+                          Please log in to quick buy
+                        </p>
+                        <Link
+                          href="/signup"
+                          className="w-full px-8 py-3 text-xs uppercase tracking-tight font-medium text-black bg-white border-none cursor-pointer transition-colors duration-200 hover:bg-[#e5e5e5] active:scale-95 text-center no-underline"
+                        >
+                          CREATE ACCOUNT
+                        </Link>
+                        <Link
+                          href="/signup"
+                          className="text-center text-xs uppercase tracking-tight text-white/50 hover:text-white transition-colors no-underline"
+                        >
+                          Already have an account? Log in
+                        </Link>
+                      </div>
+                    ) : quickBuyItem ? (
+                      <InlineCheckout
+                        items={[quickBuyItem]}
+                        submitLabel="BUY NOW"
+                        onSuccess={() => setOrderPlaced(true)}
+                      />
+                    ) : null}
                   </div>
-                ) : authLoading ? (
-                  <div className="border border-white/20 p-6 flex items-center justify-center">
-                    <p className="text-sm text-white/50">Loading...</p>
-                  </div>
-                ) : !user ? (
-                  <div className="border border-white/20 p-6 flex flex-col gap-3">
-                    <p className="text-sm text-white text-center uppercase tracking-tight">
-                      Please log in to quick buy
-                    </p>
-                    <Link 
-                      href="/signup"
-                      className="w-full px-8 py-3 text-xs uppercase tracking-tight font-medium text-black bg-white border-none cursor-pointer transition-colors duration-200 hover:bg-[#e5e5e5] active:scale-95 text-center no-underline"
-                    >
-                      CREATE ACCOUNT
-                    </Link>
-                    <Link
-                      href="/signup"
-                      className="text-center text-xs uppercase tracking-tight text-white/50 hover:text-white transition-colors no-underline"
-                    >
-                      Already have an account? Log in
-                    </Link>
-                  </div>
-                ) : quickBuyItem ? (
-                  <InlineCheckout
-                    items={[quickBuyItem]}
-                    submitLabel="BUY NOW"
-                    onSuccess={() => setOrderPlaced(true)}
-                  />
-                ) : null}
-              </div>
+                )}
+
+                <button
+                  onClick={() => router.push("/cart")}
+                  className="self-start text-xs uppercase tracking-tight text-white hover:text-white/70 transition-colors text-left"
+                >
+                  View Cart
+                </button>
+              </>
             )}
-
-            <button
-              onClick={() => router.push("/cart")}
-              className="self-start text-xs uppercase tracking-tight text-white hover:text-white/70 transition-colors text-left"
-            >
-              View Cart
-            </button>
           </div>
         </section>
       </main>

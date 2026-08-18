@@ -33,9 +33,11 @@ export default function ProductCard({ product }: ProductCardProps) {
         <div className="text-[11px] font-medium uppercase tracking-tight text-white leading-normal">
           {product.name}
         </div>
-        <div className="text-[11px] text-white leading-normal mt-0.5">
-          {formatPrice(product.price)}
-        </div>
+        {product.price != null && (
+          <div className="text-[11px] text-white leading-normal mt-0.5">
+            {formatPrice(product.price)}
+          </div>
+        )}
       </div>
     </Link>
   );

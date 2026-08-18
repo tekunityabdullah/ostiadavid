@@ -1,18 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarDays, Trash2 } from "lucide-react";
+import { CalendarDays, Pencil, Trash2 } from "lucide-react";
 import type { EventItem } from "@/lib/types";
 import { deleteEvent } from "./actions";
-import { AdminButton } from "./ui";
+import { AdminButton, AdminModal } from "./ui";
+import EventForm from "./EventForm";
 
 interface AdminEventTileProps {
   event: EventItem;
   onDeleted?: () => void;
+  onUpdated?: () => void;
 }
 
-export default function AdminEventTile({ event, onDeleted }: AdminEventTileProps) {
+export default function AdminEventTile({ event, onDeleted, onUpdated }: AdminEventTileProps) {
   const [deleting, setDeleting] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   const handleDelete = async () => {
     if (!window.confirm(`Delete "${event.title}"?`)) return;
@@ -52,16 +55,34 @@ export default function AdminEventTile({ event, onDeleted }: AdminEventTileProps
         </p>
       </div>
 
-      <AdminButton
-        type="button"
-        variant="danger"
-        onClick={handleDelete}
-        disabled={deleting}
-        className="w-full"
-      >
-        <Trash2 size={14} />
-        {deleting ? "Deleting..." : "Delete"}
-      </AdminButton>
+      <div className="grid grid-cols-2 gap-2">
+        <AdminButton type="button" variant="secondary" onClick={() => setEditing(true)} className="w-full">
+          <Pencil size={14} />
+          Edit
+        </AdminButton>
+        <AdminButton
+          type="button"
+          variant="danger"
+          onClick={handleDelete}
+          disabled={deleting}
+          className="w-full"
+        >
+          <Trash2 size={14} />
+          {deleting ? "Deleting..." : "Delete"}
+        </AdminButton>
+      </div>
+
+      {editing && (
+        <AdminModal title="Edit event" onClose={() => setEditing(false)}>
+          <EventForm
+            event={event}
+            onSuccess={() => {
+              setEditing(false);
+              onUpdated?.();
+            }}
+          />
+        </AdminModal>
+      )}
     </div>
   );
 }

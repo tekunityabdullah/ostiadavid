@@ -54,7 +54,7 @@ export default function ExclusiveTabs({ products, media, events }: ExclusiveTabs
 
   return (
     <div className="w-full">
-      <div className="mb-8 flex w-full max-w-[900px] justify-between gap-6 text-xs mx-auto sm:justify-center sm:gap-14 md:gap-20 lg:gap-28">
+      <div className="mb-8 flex w-full max-w-[900px] justify-between gap-6 text-xs mx-auto sm:justify-center sm:gap-10 md:gap-14 lg:gap-20">
         {(
           [
             ["clothes", "Clothes"],

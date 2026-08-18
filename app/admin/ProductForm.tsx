@@ -22,6 +22,9 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
   const isEditing = Boolean(product);
   const [state, dispatch, pending] = useActionState(isEditing ? updateProduct : addProduct, initialState);
   const [isDigital, setIsDigital] = useState(product?.is_digital ?? false);
+  const [hasExternalCheckout, setHasExternalCheckout] = useState(
+    Boolean(product?.external_checkout_url)
+  );
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(product?.image ?? null);
   const [digitalFile, setDigitalFile] = useState<File | null>(null);
@@ -108,14 +111,17 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
       </Field>
 
       <div className="grid gap-5 md:grid-cols-2">
-        <Field label="Price">
+        <Field
+          label={hasExternalCheckout ? "Price (optional)" : "Price"}
+          hint={hasExternalCheckout ? "Not required for an external checkout product." : undefined}
+        >
           <input
             name="price"
             type="number"
             min="0"
             step="0.01"
-            required
-            defaultValue={product?.price}
+            required={!hasExternalCheckout}
+            defaultValue={product?.price ?? undefined}
             className={inputClass}
           />
         </Field>
@@ -160,6 +166,20 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
 
       <Field label="Description">
         <textarea name="description" rows={4} defaultValue={product?.description ?? ""} className={textareaClass} />
+      </Field>
+
+      <Field
+        label="External checkout URL (optional)"
+        hint="If set, the product page shows a single Buy Now button that redirects here instead of Add to Cart / Quick Buy — use this for releases checked out through another platform (e.g. Elastic Stage)."
+      >
+        <input
+          name="external_checkout_url"
+          type="url"
+          placeholder="https://elasticstage.com/..."
+          defaultValue={product?.external_checkout_url ?? ""}
+          onChange={(e) => setHasExternalCheckout(e.target.value.trim().length > 0)}
+          className={inputClass}
+        />
       </Field>
 
       <div className="grid gap-3 border border-white/10 bg-white/[0.02] p-4">

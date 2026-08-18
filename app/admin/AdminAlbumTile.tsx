@@ -1,18 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { Disc3, Trash2 } from "lucide-react";
+import { Disc3, Pencil, Trash2 } from "lucide-react";
 import type { UnreleasedAlbum } from "@/lib/types";
 import { deleteAlbum } from "./actions";
-import { AdminButton } from "./ui";
+import { AdminButton, AdminModal } from "./ui";
+import AlbumForm from "./AlbumForm";
 
 interface AdminAlbumTileProps {
   album: UnreleasedAlbum;
   onDeleted?: () => void;
+  onUpdated?: () => void;
 }
 
-export default function AdminAlbumTile({ album, onDeleted }: AdminAlbumTileProps) {
+export default function AdminAlbumTile({ album, onDeleted, onUpdated }: AdminAlbumTileProps) {
   const [deleting, setDeleting] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   const handleDelete = async () => {
     if (!window.confirm(`Delete album "${album.title}"? Tracks stay, just unassigned.`)) return;
@@ -42,16 +45,34 @@ export default function AdminAlbumTile({ album, onDeleted }: AdminAlbumTileProps
 
       <p className="truncate text-sm uppercase tracking-tight text-white">{album.title}</p>
 
-      <AdminButton
-        type="button"
-        variant="danger"
-        onClick={handleDelete}
-        disabled={deleting}
-        className="w-full"
-      >
-        <Trash2 size={14} />
-        {deleting ? "Deleting..." : "Delete"}
-      </AdminButton>
+      <div className="grid grid-cols-2 gap-2">
+        <AdminButton type="button" variant="secondary" onClick={() => setEditing(true)} className="w-full">
+          <Pencil size={14} />
+          Edit
+        </AdminButton>
+        <AdminButton
+          type="button"
+          variant="danger"
+          onClick={handleDelete}
+          disabled={deleting}
+          className="w-full"
+        >
+          <Trash2 size={14} />
+          {deleting ? "Deleting..." : "Delete"}
+        </AdminButton>
+      </div>
+
+      {editing && (
+        <AdminModal title="Edit album" onClose={() => setEditing(false)}>
+          <AlbumForm
+            album={album}
+            onSuccess={() => {
+              setEditing(false);
+              onUpdated?.();
+            }}
+          />
+        </AdminModal>
+      )}
     </div>
   );
 }

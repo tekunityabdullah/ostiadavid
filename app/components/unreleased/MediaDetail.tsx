@@ -7,6 +7,7 @@ import {
   Download,
   ImageIcon,
   Maximize,
+  Minimize,
   Pause,
   Play,
   Shuffle,
@@ -328,31 +329,46 @@ function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initi
     video.currentTime = Math.min(Math.max(0, video.currentTime + seconds), video.duration || 0);
   };
 
-  // A real, explicit fullscreen toggle — separate from the iOS
-  // auto-fullscreen-on-play behavior that playsInline already suppresses.
-  // Safari on iOS doesn't support the standard Fullscreen API on arbitrary
-  // elements, only a video-specific one, so both paths are covered.
-  const toggleFullscreen = () => {
-    const video = videoRef.current as
-      | (HTMLVideoElement & { webkitEnterFullscreen?: () => void })
-      | null;
-    if (!video) return;
-    if (document.fullscreenElement) {
-      document.exitFullscreen();
-    } else if (video.requestFullscreen) {
-      video.requestFullscreen();
-    } else if (video.webkitEnterFullscreen) {
-      video.webkitEnterFullscreen();
-    }
-  };
+  // "Fullscreen" is our own CSS-driven overlay, not the browser/OS's native
+  // fullscreen video player — the native one (requestFullscreen /
+  // webkitEnterFullscreen) hands the whole screen over to the OS's own
+  // chrome (volume slider, AirPlay, PiP, a "..." menu, its own close
+  // button), replacing our custom title/controls entirely. This instead
+  // just expands the same video + the same title/control-card/button
+  // this component already renders to cover the viewport, so nothing
+  // outside our own UI ever shows up.
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const toggleFullscreen = () => setIsFullscreen((v) => !v);
+
+  useEffect(() => {
+    if (!isFullscreen) return;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsFullscreen(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [isFullscreen]);
 
   const remaining = Math.max(0, (duration || 0) - currentTime);
   const progressPercent = duration ? (currentTime / duration) * 100 : 0;
 
   return (
     <div>
-      <div className="relative">
-        <div className="relative flex aspect-video w-full items-center justify-center overflow-hidden bg-white/5">
+      <div
+        className={
+          isFullscreen
+            ? "fixed inset-0 z-300 flex items-center justify-center bg-black"
+            : "relative flex aspect-video w-full items-center justify-center overflow-hidden bg-white/5"
+        }
+      >
           {error ? (
             <p className="text-sm uppercase tracking-tight text-white/50">Failed to load video.</p>
           ) : url ? (
@@ -378,7 +394,7 @@ function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initi
                 controlsList="nodownload noremoteplayback"
                 disablePictureInPicture
                 onContextMenu={(e) => e.preventDefault()}
-                className="h-full w-full cursor-pointer"
+                className="h-full w-full cursor-pointer object-contain"
               />
 
               {/* Title overlay, only while the controls are shown */}
@@ -453,23 +469,26 @@ function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initi
           ) : (
             <p className="text-sm uppercase tracking-tight text-white/50">Loading...</p>
           )}
-        </div>
 
-        {/* Fullscreen toggle, in line with the control card's bottom edge —
-            explicit and user-initiated, unlike the auto-fullscreen iOS used
-            to force on play (now suppressed via playsInline). */}
-        {url && !error && (
-          <button
-            type="button"
-            onClick={toggleFullscreen}
-            aria-label="Fullscreen"
-            className={`absolute bottom-3 right-3 text-white/80 transition-opacity duration-300 hover:text-white sm:bottom-4 sm:right-4 ${
-              controlsVisible ? "opacity-100" : "pointer-events-none opacity-0"
-            }`}
-          >
-            <Maximize size={22} strokeWidth={1.5} />
-          </button>
-        )}
+          {/* Fullscreen toggle, in line with the control card's bottom edge —
+              same button, same icon slot, in both modes; just swaps to a
+              minimize icon and exits our own overlay instead of the OS's. */}
+          {url && !error && (
+            <button
+              type="button"
+              onClick={toggleFullscreen}
+              aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+              className={`absolute bottom-3 right-3 text-white/80 transition-opacity duration-300 hover:text-white sm:bottom-4 sm:right-4 ${
+                controlsVisible ? "opacity-100" : "pointer-events-none opacity-0"
+              }`}
+            >
+              {isFullscreen ? (
+                <Minimize size={22} strokeWidth={1.5} />
+              ) : (
+                <Maximize size={22} strokeWidth={1.5} />
+              )}
+            </button>
+          )}
       </div>
 
       <div className="mt-4 flex justify-end">

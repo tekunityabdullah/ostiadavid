@@ -12,7 +12,10 @@ export interface Profile {
 export interface Product {
   id: string;
   name: string;
-  price: number;
+  // Only optional for an external-checkout product (see
+  // external_checkout_url below) — every product sold through our own
+  // cart/checkout still requires one.
+  price: number | null;
   image: string;
   category: string | null;
   description: string | null;
@@ -23,6 +26,11 @@ export interface Product {
   printful_variants?: string | null;
   is_digital?: boolean;
   digital_file_path?: string | null;
+  // When set, this product isn't sold through our own cart/checkout at
+  // all — the product page shows a single "Buy Now" link straight out to
+  // this URL instead (e.g. a release checked out through a platform like
+  // Elastic Stage that has no API to integrate with).
+  external_checkout_url?: string | null;
 }
 
 export interface CartItem {

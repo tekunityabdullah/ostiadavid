@@ -103,11 +103,14 @@ export function AdminModal({ title, onClose, children }: AdminModalProps) {
 
 type ButtonVariant = "primary" | "secondary" | "danger";
 
+// Same height (h-11) and horizontal padding (px-4) across every variant —
+// Edit/Delete pairs sit side by side in tile rows throughout the admin
+// panel and must line up exactly, not just roughly.
 const buttonVariants: Record<ButtonVariant, string> = {
-  primary: "h-11 bg-white px-5 text-black hover:bg-white/85",
-  secondary: "h-11 border border-white/20 px-5 text-white hover:border-white/50 hover:bg-white/5",
+  primary: "h-11 bg-white px-4 text-black hover:bg-white/85",
+  secondary: "h-11 border border-white/20 px-4 text-white hover:border-white/50 hover:bg-white/5",
   danger:
-    "h-9 border border-red-500/30 bg-red-500/[0.06] px-3 text-[11px] text-red-300 hover:border-red-400/60 hover:bg-red-500/10",
+    "h-11 border border-red-500/30 bg-red-500/[0.06] px-4 text-red-300 hover:border-red-400/60 hover:bg-red-500/10",
 };
 
 interface AdminButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -117,7 +120,7 @@ interface AdminButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 export function AdminButton({ variant = "primary", className = "", ...props }: AdminButtonProps) {
   return (
     <button
-      className={`inline-flex items-center justify-center gap-2 text-xs font-medium uppercase tracking-[0.15em] transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 ${buttonVariants[variant]} ${className}`}
+      className={`inline-flex items-center justify-center gap-1.5 whitespace-nowrap text-xs font-medium uppercase tracking-[0.15em] transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 sm:gap-2 ${buttonVariants[variant]} ${className}`}
       {...props}
     />
   );

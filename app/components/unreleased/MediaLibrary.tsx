@@ -46,7 +46,7 @@ export default function MediaLibrary({ media }: { media: UnreleasedMediaSummary[
   return (
     <div className="w-full max-w-[900px] pb-28">
       {/* VIDEOS / MUSIC / IMAGES */}
-      <div className="mb-10 flex w-full justify-between gap-6 px-6 text-xs sm:justify-center sm:gap-14 sm:px-0 md:gap-20 lg:gap-28">
+      <div className="mb-10 flex w-full justify-between gap-6 px-6 text-xs sm:justify-center sm:gap-10 sm:px-0 md:gap-14 lg:gap-20">
         {(
           [
             ["videos", "Videos"],
