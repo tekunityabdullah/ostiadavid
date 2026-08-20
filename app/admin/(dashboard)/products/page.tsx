@@ -10,12 +10,28 @@ export default function AdminProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [loadError, setLoadError] = useState("");
 
   const loadProducts = useCallback(() => {
     return fetch("/api/admin/products")
       .then((res) => res.json())
-      .then((data) => setProducts(data))
-      .catch((err) => console.error("Failed to load products:", err))
+      .then((data) => {
+        // The API returns { error } (not an array) if the query fails —
+        // e.g. a migration hasn't been run on this database yet. Never let
+        // that reach products.map() and crash the whole page.
+        if (Array.isArray(data)) {
+          setProducts(data);
+          setLoadError("");
+        } else {
+          setProducts([]);
+          setLoadError(data?.error || "Failed to load products.");
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load products:", err);
+        setProducts([]);
+        setLoadError("Failed to load products.");
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -78,18 +94,31 @@ export default function AdminProductsPage() {
 
           {loading ? (
             <p className="py-12 text-sm uppercase tracking-tight text-white/50">Loading...</p>
+          ) : loadError ? (
+            <p className="py-12 text-sm uppercase tracking-tight text-red-300">{loadError}</p>
           ) : products.length === 0 ? (
             <p className="py-12 text-sm uppercase tracking-tight text-white/50">No products yet.</p>
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-              {products.map((product) => (
-                <AdminProductTile
-                  key={product.id}
-                  product={product}
-                  onDeleted={loadProducts}
-                  onUpdated={loadProducts}
-                />
-              ))}
+              {(() => {
+                // Position numbers are per is_exclusive group, matching how
+                // move up/down is scoped — regular and exclusive products
+                // are two separate lists on the storefront.
+                let regularCount = 0;
+                let exclusiveCount = 0;
+                return products.map((product) => {
+                  const position = product.is_exclusive ? ++exclusiveCount : ++regularCount;
+                  return (
+                    <AdminProductTile
+                      key={product.id}
+                      product={product}
+                      position={position}
+                      onDeleted={loadProducts}
+                      onUpdated={loadProducts}
+                    />
+                  );
+                });
+              })()}
             </div>
           )}
         </div>

@@ -1,22 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import { Package, Pencil, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Package, Pencil, Trash2 } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { formatPrice } from "@/lib/utils";
-import { deleteProduct } from "./actions";
+import { deleteProduct, moveProductOrder } from "./actions";
 import { AdminButton, AdminModal } from "./ui";
 import ProductForm from "./ProductForm";
 
 interface AdminProductTileProps {
   product: Product;
+  /** 1-based position within its own is_exclusive group — display only. */
+  position?: number;
   onDeleted?: () => void;
   onUpdated?: () => void;
 }
 
-export default function AdminProductTile({ product, onDeleted, onUpdated }: AdminProductTileProps) {
+export default function AdminProductTile({ product, position, onDeleted, onUpdated }: AdminProductTileProps) {
   const [deleting, setDeleting] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [moving, setMoving] = useState(false);
 
   const handleDelete = async () => {
     if (!window.confirm(`Delete "${product.name}"?`)) return;
@@ -30,6 +33,20 @@ export default function AdminProductTile({ product, onDeleted, onUpdated }: Admi
       onDeleted?.();
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleMove = async (direction: "up" | "down") => {
+    setMoving(true);
+    const formData = new FormData();
+    formData.set("product_id", product.id);
+    formData.set("direction", direction);
+
+    try {
+      await moveProductOrder(formData);
+      onUpdated?.();
+    } finally {
+      setMoving(false);
     }
   };
 
@@ -52,6 +69,30 @@ export default function AdminProductTile({ product, onDeleted, onUpdated }: Admi
           {product.is_digital ? " · Digital" : ""}
           {product.external_checkout_url ? " · External checkout" : ""}
         </p>
+      </div>
+
+      <div className="flex items-center justify-between gap-2 border border-white/10 px-1 py-1">
+        <button
+          type="button"
+          onClick={() => handleMove("up")}
+          disabled={moving}
+          aria-label="Move up"
+          className="p-1.5 text-white/60 transition hover:text-white disabled:opacity-40"
+        >
+          <ChevronUp size={14} />
+        </button>
+        <span className="text-[10px] uppercase tracking-[0.15em] text-white/40">
+          {position != null ? `#${position}` : ""}
+        </span>
+        <button
+          type="button"
+          onClick={() => handleMove("down")}
+          disabled={moving}
+          aria-label="Move down"
+          className="p-1.5 text-white/60 transition hover:text-white disabled:opacity-40"
+        >
+          <ChevronDown size={14} />
+        </button>
       </div>
 
       <div className="grid grid-cols-2 gap-2">

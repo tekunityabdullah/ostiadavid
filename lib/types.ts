@@ -31,6 +31,10 @@ export interface Product {
   // this URL instead (e.g. a release checked out through a platform like
   // Elastic Stage that has no API to integrate with).
   external_checkout_url?: string | null;
+  // Manual display order — lower shows first. Scoped within is_exclusive
+  // (regular and exclusive products are separate lists on the storefront,
+  // so reordering one never affects the other).
+  sort_order?: number;
 }
 
 export interface CartItem {
@@ -100,6 +104,10 @@ export interface UnreleasedMedia {
   album_id: string | null;
   track_number: number | null;
   created_at: string;
+  // Manual display order — lower shows first. Scoped within media_type
+  // (Videos/Music/Images are separate grids on the site, so reordering one
+  // never affects the others).
+  sort_order?: number;
 }
 
 // Metadata sent to the browser — deliberately omits `file_path` so the

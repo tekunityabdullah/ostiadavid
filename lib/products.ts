@@ -8,7 +8,7 @@
       .from("products")
       .select("*")
       .eq("is_exclusive", false)
-      .order("created_at", { ascending: false });
+      .order("sort_order", { ascending: true });
 
     if (error) {
       console.error("Failed to fetch products:", error.message);
@@ -22,8 +22,8 @@
     const accountType = await getAccountType();
     const supabase = await createClient();
 
-    let query = supabase.from("products").select("*").order("created_at", {
-      ascending: false,
+    let query = supabase.from("products").select("*").order("sort_order", {
+      ascending: true,
     });
 
     if (accountType !== "exclusive" && !(await isAdmin())) {
@@ -46,7 +46,7 @@
       .from("products")
       .select("*")
       .eq("is_exclusive", true)
-      .order("created_at", { ascending: false });
+      .order("sort_order", { ascending: true });
 
     if (error) {
       console.error("Failed to fetch exclusive products:", error.message);

@@ -72,7 +72,7 @@ export async function getUnreleasedMedia(): Promise<UnreleasedMediaSummary[]> {
   const { data, error } = await supabase
     .from("unreleased_media")
     .select(SUMMARY_COLUMNS)
-    .order("created_at", { ascending: false });
+    .order("sort_order", { ascending: true });
 
   if (error) {
     console.error("Failed to fetch unreleased media:", error.message);

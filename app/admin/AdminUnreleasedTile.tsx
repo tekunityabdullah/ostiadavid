@@ -1,22 +1,31 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2, Music, Video, ImageIcon, Pencil } from "lucide-react";
+import { ChevronDown, ChevronUp, Trash2, Music, Video, ImageIcon, Pencil } from "lucide-react";
 import type { UnreleasedAlbum, UnreleasedMediaSummary } from "@/lib/types";
-import { deleteUnreleasedMedia } from "./actions";
+import { deleteUnreleasedMedia, moveUnreleasedMediaOrder } from "./actions";
 import { AdminButton, AdminModal } from "./ui";
 import UnreleasedMediaEditForm from "./UnreleasedMediaEditForm";
 
 interface AdminUnreleasedTileProps {
   media: UnreleasedMediaSummary;
   albums: UnreleasedAlbum[];
+  /** 1-based position within its own media_type group — display only. */
+  position?: number;
   onDeleted?: () => void;
   onUpdated?: () => void;
 }
 
-export default function AdminUnreleasedTile({ media, albums, onDeleted, onUpdated }: AdminUnreleasedTileProps) {
+export default function AdminUnreleasedTile({
+  media,
+  albums,
+  position,
+  onDeleted,
+  onUpdated,
+}: AdminUnreleasedTileProps) {
   const [deleting, setDeleting] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [moving, setMoving] = useState(false);
 
   const handleDelete = async () => {
     if (!window.confirm(`Delete "${media.title}"?`)) return;
@@ -30,6 +39,20 @@ export default function AdminUnreleasedTile({ media, albums, onDeleted, onUpdate
       onDeleted?.();
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleMove = async (direction: "up" | "down") => {
+    setMoving(true);
+    const formData = new FormData();
+    formData.set("media_id", media.id);
+    formData.set("direction", direction);
+
+    try {
+      await moveUnreleasedMediaOrder(formData);
+      onUpdated?.();
+    } finally {
+      setMoving(false);
     }
   };
 
@@ -60,6 +83,30 @@ export default function AdminUnreleasedTile({ media, albums, onDeleted, onUpdate
           {media.media_type}
           {media.youtube_url ? " · YouTube" : ""}
         </p>
+      </div>
+
+      <div className="flex items-center justify-between gap-2 border border-white/10 px-1 py-1">
+        <button
+          type="button"
+          onClick={() => handleMove("up")}
+          disabled={moving}
+          aria-label="Move up"
+          className="p-1.5 text-white/60 transition hover:text-white disabled:opacity-40"
+        >
+          <ChevronUp size={14} />
+        </button>
+        <span className="text-[10px] uppercase tracking-[0.15em] text-white/40">
+          {position != null ? `#${position}` : ""}
+        </span>
+        <button
+          type="button"
+          onClick={() => handleMove("down")}
+          disabled={moving}
+          aria-label="Move down"
+          className="p-1.5 text-white/60 transition hover:text-white disabled:opacity-40"
+        >
+          <ChevronDown size={14} />
+        </button>
       </div>
 
       <div className="grid grid-cols-2 gap-2">

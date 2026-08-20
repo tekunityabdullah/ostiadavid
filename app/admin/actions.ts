@@ -156,6 +156,69 @@ export async function updateProduct(
   return { ok: true, message: "Product updated." };
 }
 
+// Swaps sort_order with the nearest neighbor in the same direction — but
+// only among products sharing the same is_exclusive flag, since regular
+// and exclusive products are two separate lists on the storefront and
+// never actually sit next to each other there.
+export async function moveProductOrder(formData: FormData) {
+  if (!(await isAdmin())) {
+    redirect("/admin/login");
+  }
+
+  const productId = String(formData.get("product_id") ?? "").trim();
+  const direction = String(formData.get("direction") ?? "").trim();
+
+  if (!productId || (direction !== "up" && direction !== "down")) {
+    return;
+  }
+
+  const supabase = await createClient();
+
+  const { data: current } = await supabase
+    .from("products")
+    .select("id, sort_order, is_exclusive")
+    .eq("id", productId)
+    .single();
+
+  if (!current) return;
+
+  let neighborQuery = supabase
+    .from("products")
+    .select("id, sort_order")
+    .eq("is_exclusive", current.is_exclusive)
+    .limit(1);
+
+  neighborQuery =
+    direction === "up"
+      ? neighborQuery.lt("sort_order", current.sort_order).order("sort_order", { ascending: false })
+      : neighborQuery.gt("sort_order", current.sort_order).order("sort_order", { ascending: true });
+
+  const { data: neighbors } = await neighborQuery;
+  const neighbor = neighbors?.[0];
+
+  // Already first/last in its group — nothing to swap with.
+  if (!neighbor) return;
+
+  const { error: err1 } = await supabase
+    .from("products")
+    .update({ sort_order: neighbor.sort_order })
+    .eq("id", current.id);
+  const { error: err2 } = await supabase
+    .from("products")
+    .update({ sort_order: current.sort_order })
+    .eq("id", neighbor.id);
+
+  if (err1 || err2) {
+    console.error("Failed to reorder product:", (err1 || err2)?.message);
+    return;
+  }
+
+  revalidatePath("/");
+  revalidatePath("/collections");
+  revalidatePath("/exclusive");
+  revalidatePath("/admin");
+}
+
 export async function deleteProduct(formData: FormData) {
   if (!(await isAdmin())) {
     redirect("/admin/login");
@@ -332,6 +395,68 @@ export async function updateUnreleasedMedia(
   revalidatePath("/admin");
 
   return { ok: true, message: "Updated." };
+}
+
+// Swaps sort_order with the nearest neighbor in the same direction — but
+// only among media sharing the same media_type, since Videos/Music/Images
+// are three separate grids on the site and never actually sit next to
+// each other there.
+export async function moveUnreleasedMediaOrder(formData: FormData) {
+  if (!(await isAdmin())) {
+    redirect("/admin/login");
+  }
+
+  const mediaId = String(formData.get("media_id") ?? "").trim();
+  const direction = String(formData.get("direction") ?? "").trim();
+
+  if (!mediaId || (direction !== "up" && direction !== "down")) {
+    return;
+  }
+
+  const supabase = await createClient();
+
+  const { data: current } = await supabase
+    .from("unreleased_media")
+    .select("id, sort_order, media_type")
+    .eq("id", mediaId)
+    .single();
+
+  if (!current) return;
+
+  let neighborQuery = supabase
+    .from("unreleased_media")
+    .select("id, sort_order")
+    .eq("media_type", current.media_type)
+    .limit(1);
+
+  neighborQuery =
+    direction === "up"
+      ? neighborQuery.lt("sort_order", current.sort_order).order("sort_order", { ascending: false })
+      : neighborQuery.gt("sort_order", current.sort_order).order("sort_order", { ascending: true });
+
+  const { data: neighbors } = await neighborQuery;
+  const neighbor = neighbors?.[0];
+
+  // Already first/last in its group — nothing to swap with.
+  if (!neighbor) return;
+
+  const { error: err1 } = await supabase
+    .from("unreleased_media")
+    .update({ sort_order: neighbor.sort_order })
+    .eq("id", current.id);
+  const { error: err2 } = await supabase
+    .from("unreleased_media")
+    .update({ sort_order: current.sort_order })
+    .eq("id", neighbor.id);
+
+  if (err1 || err2) {
+    console.error("Failed to reorder unreleased media:", (err1 || err2)?.message);
+    return;
+  }
+
+  revalidatePath("/unreleased");
+  revalidatePath("/exclusive");
+  revalidatePath("/admin");
 }
 
 export async function deleteUnreleasedMedia(formData: FormData) {
