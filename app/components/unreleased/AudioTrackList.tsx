@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { Heart, Music, Pause, Play, Shuffle, X } from "lucide-react";
+import { Heart, Pause, Play, Shuffle, X } from "lucide-react";
 import type { UnreleasedMediaSummary } from "@/lib/types";
 import { useUnreleasedPlayer } from "./PlayerProvider";
 import { formatTime } from "./format";
 import { ARTIST_NAME } from "./constants";
 import AddToPlaylistMenu from "./AddToPlaylistMenu";
+import WaveformIcon from "./WaveformIcon";
 
 function EqualizerBars() {
   return (
@@ -147,7 +148,7 @@ export default function AudioTrackList({
                     className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-110"
                   />
                 ) : (
-                  <Music size={16} className="text-white/30" />
+                  <WaveformIcon fill />
                 )}
               </Link>
 

@@ -35,6 +35,7 @@ export async function addProduct(
   const isDigital = formData.get("is_digital") === "on";
   const digitalFilePath = String(formData.get("digital_file_path") ?? "").trim() || null;
   const externalCheckoutUrl = String(formData.get("external_checkout_url") ?? "").trim() || null;
+  const collection = String(formData.get("collection") ?? "").trim() || null;
 
   // Price is only required for products we actually sell ourselves — an
   // external-checkout product can skip it (the other platform has its own).
@@ -67,6 +68,7 @@ export async function addProduct(
     is_digital: isDigital,
     digital_file_path: digitalFilePath,
     external_checkout_url: externalCheckoutUrl,
+    collection,
   });
 
   if (error) {
@@ -103,6 +105,7 @@ export async function updateProduct(
   const isDigital = formData.get("is_digital") === "on";
   const digitalFilePath = String(formData.get("digital_file_path") ?? "").trim() || null;
   const externalCheckoutUrl = String(formData.get("external_checkout_url") ?? "").trim() || null;
+  const collection = String(formData.get("collection") ?? "").trim() || null;
 
   if (!productId) {
     return { ok: false, message: "Missing product." };
@@ -141,6 +144,7 @@ export async function updateProduct(
       is_digital: isDigital,
       digital_file_path: digitalFilePath,
       external_checkout_url: externalCheckoutUrl,
+      collection,
     })
     .eq("id", productId);
 
@@ -280,6 +284,8 @@ export async function addUnreleasedMedia(
   const trackNumber = trackNumberValue ? Number(trackNumberValue) : null;
   const mediaPath = String(formData.get("media_path") ?? "").trim();
   const youtubeUrl = String(formData.get("youtube_url") ?? "").trim();
+  const priceValue = String(formData.get("price") ?? "").trim();
+  const price = priceValue ? Number(priceValue) : null;
 
   if (!title || (mediaType !== "audio" && mediaType !== "video" && mediaType !== "image")) {
     return { ok: false, message: "Title and a valid media type are required." };
@@ -287,6 +293,10 @@ export async function addUnreleasedMedia(
 
   if (!mediaPath && !youtubeUrl) {
     return { ok: false, message: "An audio, video, or image file (or a YouTube URL) is required." };
+  }
+
+  if (price !== null && (!Number.isFinite(price) || price < 0)) {
+    return { ok: false, message: "Enter a valid price." };
   }
 
   const supabase = await createClient();
@@ -300,6 +310,7 @@ export async function addUnreleasedMedia(
     duration_seconds: Number.isFinite(durationSeconds) ? durationSeconds : null,
     album_id: albumId || null,
     track_number: Number.isFinite(trackNumber) ? trackNumber : null,
+    price,
   });
 
   if (error) {
@@ -336,6 +347,8 @@ export async function updateUnreleasedMedia(
   // an empty value here means "keep whatever's already stored".
   const newMediaPath = String(formData.get("media_path") ?? "").trim();
   const youtubeUrl = String(formData.get("youtube_url") ?? "").trim();
+  const priceValue = String(formData.get("price") ?? "").trim();
+  const price = priceValue ? Number(priceValue) : null;
 
   if (!mediaId) {
     return { ok: false, message: "Missing track/video/image." };
@@ -343,6 +356,10 @@ export async function updateUnreleasedMedia(
 
   if (!title) {
     return { ok: false, message: "Title is required." };
+  }
+
+  if (price !== null && (!Number.isFinite(price) || price < 0)) {
+    return { ok: false, message: "Enter a valid price." };
   }
 
   const supabase = await createClient();
@@ -353,6 +370,7 @@ export async function updateUnreleasedMedia(
     cover_image: coverImage,
     album_id: albumId || null,
     track_number: Number.isFinite(trackNumber) ? trackNumber : null,
+    price,
   };
 
   if (durationValue) {

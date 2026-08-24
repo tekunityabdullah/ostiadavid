@@ -10,6 +10,9 @@ import {
 } from "react";
 import type { UnreleasedMediaSummary } from "@/lib/types";
 import { recordRecentlyPlayed } from "./recentlyPlayed";
+import { ARTIST_NAME } from "./constants";
+
+const FALLBACK_ARTWORK = "/audio-placeholder.png";
 
 export type RepeatMode = "off" | "all" | "one";
 
@@ -153,6 +156,10 @@ export default function PlayerProvider({ children, audioTracks }: PlayerProvider
   useEffect(() => {
     const audio = new Audio();
     audio.preload = "none";
+    // Keeps the browser/OS from offering AirPlay/Cast routing for this
+    // element — we don't support remote playback and don't want that
+    // option showing up in the OS-level "Now Playing" widget.
+    audio.disableRemotePlayback = true;
     audioRef.current = audio;
 
     const onTimeUpdate = () => setCurrentTime(audio.currentTime);
@@ -261,6 +268,52 @@ export default function PlayerProvider({ children, audioTracks }: PlayerProvider
       prev === "off" ? "all" : prev === "all" ? "one" : "off"
     );
   }, []);
+
+  // Populates the OS/browser-level "Now Playing" widget (lock screen,
+  // notification center, Windows volume flyout, etc.) the same way
+  // Spotify/YouTube do — real title, artist and artwork instead of
+  // whatever generic fallback the browser would otherwise show.
+  useEffect(() => {
+    if (typeof window === "undefined" || !("mediaSession" in navigator)) return;
+
+    if (!currentTrack) {
+      navigator.mediaSession.metadata = null;
+      navigator.mediaSession.playbackState = "none";
+      return;
+    }
+
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: currentTrack.title,
+      artist: ARTIST_NAME,
+      artwork: [
+        { src: currentTrack.cover_image || FALLBACK_ARTWORK, sizes: "512x512", type: "image/png" },
+      ],
+    });
+    navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
+  }, [currentTrack, isPlaying]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !("mediaSession" in navigator)) return;
+
+    navigator.mediaSession.setActionHandler("play", () => audioRef.current?.play());
+    navigator.mediaSession.setActionHandler("pause", () => audioRef.current?.pause());
+    navigator.mediaSession.setActionHandler("previoustrack", playPrevious);
+    navigator.mediaSession.setActionHandler("nexttrack", playNext);
+    navigator.mediaSession.setActionHandler("stop", stop);
+    // Explicitly opting out (rather than leaving unset) is what stops
+    // Chrome from falling back to its default 10-second skip buttons —
+    // we don't support seeking from the OS widget, like Spotify/YouTube.
+    navigator.mediaSession.setActionHandler("seekbackward", null);
+    navigator.mediaSession.setActionHandler("seekforward", null);
+
+    return () => {
+      navigator.mediaSession.setActionHandler("play", null);
+      navigator.mediaSession.setActionHandler("pause", null);
+      navigator.mediaSession.setActionHandler("previoustrack", null);
+      navigator.mediaSession.setActionHandler("nexttrack", null);
+      navigator.mediaSession.setActionHandler("stop", null);
+    };
+  }, [playNext, playPrevious, stop]);
 
   // Spotify/YouTube-style transport shortcuts. Skipped while typing in a
   // form field so they don't hijack normal text entry elsewhere on the site.

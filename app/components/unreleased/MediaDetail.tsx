@@ -22,6 +22,11 @@ import VideoGrid from "./VideoGrid";
 import WaveformIcon from "./WaveformIcon";
 import { formatTime } from "./format";
 import { getYouTubeEmbedUrl } from "./youtube";
+import { ARTIST_NAME } from "./constants";
+import { useCart } from "@/lib/cart-context";
+import { formatPrice } from "@/lib/utils";
+
+const FALLBACK_ARTWORK = "/audio-placeholder.png";
 
 interface MediaDetailProps {
   item: UnreleasedMediaSummary;
@@ -107,6 +112,24 @@ function AudioDetail({ item }: { item: UnreleasedMediaSummary }) {
     playNext,
     playPrevious,
   } = useUnreleasedPlayer();
+  const { addItem } = useCart();
+  const [added, setAdded] = useState(false);
+
+  const handleAddToCart = () => {
+    if (item.price == null) return;
+    addItem({
+      productId: item.id,
+      variantId: null,
+      variantLabel: null,
+      name: item.title,
+      price: item.price,
+      image: item.cover_image ?? FALLBACK_ARTWORK,
+      isDigital: true,
+      isExclusive: true,
+    });
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
+  };
 
   const isActive = currentTrack?.id === item.id;
   const displayTime = isActive ? currentTime : 0;
@@ -193,14 +216,26 @@ function AudioDetail({ item }: { item: UnreleasedMediaSummary }) {
         </button>
       </div>
 
-      <div className="flex w-full justify-end">
-        <button
-          type="button"
-          className="text-xs font-medium uppercase tracking-tight text-white transition hover:opacity-70"
-        >
-          Add to Cart
-        </button>
-      </div>
+      {item.price != null && (
+        <div className="flex w-full items-center justify-between gap-4">
+          <p className="text-sm font-medium text-white">{formatPrice(item.price)}</p>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/cart?scope=exclusive"
+              className="text-xs uppercase tracking-tight text-white/50 transition hover:text-white"
+            >
+              View Cart
+            </Link>
+            <button
+              type="button"
+              onClick={handleAddToCart}
+              className="text-xs font-medium uppercase tracking-tight text-white transition hover:opacity-70"
+            >
+              {added ? "Added to Cart" : "Add to Cart"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -269,12 +304,58 @@ function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initi
   // sticky bottom bar persists across pages) while this video is playing,
   // this video gets paused in turn.
   const { isPlaying: audioIsPlaying, pause: pauseAudio } = useUnreleasedPlayer();
+  const { addItem } = useCart();
+  const [added, setAdded] = useState(false);
+
+  const handleAddToCart = () => {
+    if (item.price == null) return;
+    addItem({
+      productId: item.id,
+      variantId: null,
+      variantLabel: null,
+      name: item.title,
+      price: item.price,
+      image: item.cover_image ?? "",
+      isDigital: true,
+      isExclusive: true,
+    });
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
+  };
 
   useEffect(() => {
     if (audioIsPlaying) {
       videoRef.current?.pause();
     }
   }, [audioIsPlaying]);
+
+  // Same OS/browser-level "Now Playing" widget treatment as the audio
+  // player (see PlayerProvider) — real title + artwork, no default
+  // 10-second skip buttons.
+  useEffect(() => {
+    if (typeof window === "undefined" || !("mediaSession" in navigator)) return;
+
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: item.title,
+      artist: ARTIST_NAME,
+      artwork: [
+        { src: item.cover_image || FALLBACK_ARTWORK, sizes: "512x512", type: "image/png" },
+      ],
+    });
+    navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
+
+    navigator.mediaSession.setActionHandler("play", () => videoRef.current?.play());
+    navigator.mediaSession.setActionHandler("pause", () => videoRef.current?.pause());
+    navigator.mediaSession.setActionHandler("seekbackward", null);
+    navigator.mediaSession.setActionHandler("seekforward", null);
+    navigator.mediaSession.setActionHandler("previoustrack", null);
+    navigator.mediaSession.setActionHandler("nexttrack", null);
+
+    return () => {
+      navigator.mediaSession.setActionHandler("play", null);
+      navigator.mediaSession.setActionHandler("pause", null);
+    };
+  }, [item.title, item.cover_image, isPlaying]);
 
   useEffect(() => {
     if (initialUrl) {
@@ -393,6 +474,7 @@ function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initi
                 onLoadedMetadata={(e) => setDuration(e.currentTarget.duration || 0)}
                 controlsList="nodownload noremoteplayback"
                 disablePictureInPicture
+                disableRemotePlayback
                 onContextMenu={(e) => e.preventDefault()}
                 className="h-full w-full cursor-pointer object-contain"
               />
@@ -491,14 +573,26 @@ function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initi
           )}
       </div>
 
-      <div className="mt-4 flex justify-end">
-        <button
-          type="button"
-          className="text-xs font-medium uppercase tracking-tight text-white transition hover:opacity-70"
-        >
-          Add to Cart
-        </button>
-      </div>
+      {item.price != null && (
+        <div className="mt-4 flex w-full items-center justify-between gap-4">
+          <p className="text-sm font-medium text-white">{formatPrice(item.price)}</p>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/cart?scope=exclusive"
+              className="text-xs uppercase tracking-tight text-white/50 transition hover:text-white"
+            >
+              View Cart
+            </Link>
+            <button
+              type="button"
+              onClick={handleAddToCart}
+              className="text-xs font-medium uppercase tracking-tight text-white transition hover:opacity-70"
+            >
+              {added ? "Added to Cart" : "Add to Cart"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

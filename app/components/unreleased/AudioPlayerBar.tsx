@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
-  ChevronUp,
-  Music,
   Pause,
   Play,
   Repeat,
@@ -19,7 +18,7 @@ import {
 import { useUnreleasedPlayer } from "./PlayerProvider";
 import { formatTime } from "./format";
 import { ARTIST_NAME } from "./constants";
-import NowPlayingOverlay from "./NowPlayingOverlay";
+import WaveformIcon from "./WaveformIcon";
 
 function VolumeIcon({ volume, muted }: { volume: number; muted: boolean }) {
   if (muted || volume === 0) return <VolumeX size={16} />;
@@ -50,16 +49,15 @@ export default function AudioPlayerBar() {
   } = useUnreleasedPlayer();
 
   const [showVolume, setShowVolume] = useState(false);
-  const [showNowPlaying, setShowNowPlaying] = useState(false);
 
   if (!currentTrack) return null;
 
   return (
     <div className="fixed inset-x-0 bottom-3 z-150 mx-auto flex w-[86%] max-w-sm flex-col gap-2 rounded-lg border border-white/10 bg-black/90 px-4 py-3 backdrop-blur-md sm:px-6">
       <div className="flex items-center gap-4">
-        <button
-          onClick={() => setShowNowPlaying(true)}
-          aria-label="Open now playing"
+        <Link
+          href={`/unreleased/${currentTrack.id}`}
+          aria-label={`Go to ${currentTrack.title}`}
           className="flex min-w-0 flex-1 items-center gap-3 text-left"
         >
           <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden bg-white/5 shadow-[0_2px_12px_rgba(0,0,0,0.4)]">
@@ -71,7 +69,7 @@ export default function AudioPlayerBar() {
                 className="h-full w-full object-cover"
               />
             ) : (
-              <Music size={16} className="text-white/30" />
+              <WaveformIcon fill />
             )}
           </div>
           <span className="min-w-0">
@@ -80,8 +78,7 @@ export default function AudioPlayerBar() {
             </p>
             <p className="truncate text-[11px] text-white/40">{ARTIST_NAME}</p>
           </span>
-          <ChevronUp size={14} className="hidden shrink-0 text-white/30 sm:block" />
-        </button>
+        </Link>
 
         <div className="flex items-center gap-0.5 sm:gap-1">
           <button
@@ -190,8 +187,6 @@ export default function AudioPlayerBar() {
           {formatTime(duration)}
         </span>
       </div>
-
-      {showNowPlaying && <NowPlayingOverlay onClose={() => setShowNowPlaying(false)} />}
     </div>
   );
 }

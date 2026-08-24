@@ -5,7 +5,7 @@ import type { UnreleasedAlbum, UnreleasedMediaSummary } from "@/lib/types";
 // storage path can't leak to a client component even by accident. Playback
 // always goes through /api/unreleased/stream, which resolves it server-side.
 const SUMMARY_COLUMNS =
-  "id, title, media_type, description, cover_image, youtube_url, duration_seconds, play_count, album_id, track_number, created_at";
+  "id, title, media_type, description, cover_image, youtube_url, duration_seconds, play_count, album_id, track_number, created_at, sort_order, price";
 
 const UNRELEASED_BUCKET = "unreleased-media";
 const SIGNED_URL_EXPIRY_SECONDS = 60 * 15; // 15 minutes — reissued per play

@@ -136,6 +136,18 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
         </Field>
       </div>
 
+      <Field
+        label="Collection (optional)"
+        hint='Groups this product under a named section on the Collections page (e.g. "Self Titled"). Leave blank to keep it off that page — not every product needs to belong to a collection.'
+      >
+        <input
+          name="collection"
+          placeholder="Self Titled"
+          defaultValue={product?.collection ?? ""}
+          className={inputClass}
+        />
+      </Field>
+
       <Field label="Product image">
         <div className="flex flex-wrap items-center gap-3">
           {imagePreview && (

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
-  Music,
   Pause,
   Play,
   Repeat,
@@ -16,6 +15,7 @@ import {
 import { useUnreleasedPlayer } from "./PlayerProvider";
 import { formatTime } from "./format";
 import { ARTIST_NAME } from "./constants";
+import WaveformIcon from "./WaveformIcon";
 
 type Tab = "playing" | "queue";
 
@@ -84,7 +84,7 @@ export default function NowPlayingOverlay({ onClose }: { onClose: () => void }) 
                 className="h-full w-full object-cover"
               />
             ) : (
-              <Music size={56} className="text-white/30" />
+              <WaveformIcon fill />
             )}
           </div>
 
@@ -175,7 +175,7 @@ export default function NowPlayingOverlay({ onClose }: { onClose: () => void }) 
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <Music size={16} className="text-white/30" />
+                      <WaveformIcon fill />
                     )}
                   </span>
                   <span className="min-w-0 flex-1">

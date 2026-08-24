@@ -81,3 +81,26 @@
     const products = await getRegularProducts();
     return products.filter((p) => p.category === category);
   }
+
+  // The Collections page only shows products an admin has explicitly
+  // assigned to a named collection (e.g. "Self Titled") — not every regular
+  // product. Grouped in collection-name order, products within each group
+  // keep the same manual sort_order used everywhere else.
+  export async function getProductCollections(): Promise<
+    { name: string; products: Product[] }[]
+  > {
+    const products = await getRegularProducts();
+    const groups = new Map<string, Product[]>();
+
+    for (const product of products) {
+      const name = product.collection?.trim();
+      if (!name) continue;
+      const existing = groups.get(name);
+      if (existing) existing.push(product);
+      else groups.set(name, [product]);
+    }
+
+    return [...groups.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([name, products]) => ({ name, products }));
+  }

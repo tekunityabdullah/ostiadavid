@@ -12,20 +12,36 @@ type Tab = "videos" | "music" | "images";
 
 const VALID_TABS: Tab[] = ["videos", "music", "images"];
 
-function resolveInitialTab(requested: string | null): Tab {
+// `preferRemembered` distinguishes "returning" from "landing fresh": a
+// breadcrumb/back-button navigation explicitly carries ?tab=unreleased in
+// the URL (see ExclusiveTabs), so it's safe to restore whatever sub-tab
+// was last active. A bare /exclusive (the Exclusive nav link, defaulting
+// to Unreleased on its own) carries no such signal, and should always
+// land on Music regardless of session history.
+function resolveInitialTab(requested: string | null, preferRemembered: boolean): Tab {
   if (VALID_TABS.includes(requested as Tab)) return requested as Tab;
-  const remembered = getLastSubTab();
-  if (VALID_TABS.includes(remembered as Tab)) return remembered as Tab;
+  if (preferRemembered) {
+    const remembered = getLastSubTab();
+    if (VALID_TABS.includes(remembered as Tab)) return remembered as Tab;
+  }
   return "music";
 }
 
-export default function MediaLibrary({ media }: { media: UnreleasedMediaSummary[] }) {
+export default function MediaLibrary({
+  media,
+  preferRememberedTab = false,
+}: {
+  media: UnreleasedMediaSummary[];
+  preferRememberedTab?: boolean;
+}) {
   // The URL's ?media= wins when present (e.g. a link that explicitly deep
   // links a sub-tab); otherwise fall back to whatever sub-tab was last
-  // active this session, so returning from a track/video/image detail page
-  // lands back on the same Videos/Music/Images tab instead of resetting.
+  // active this session — but only when preferRememberedTab says this is a
+  // "returning" navigation, not a fresh landing.
   const searchParams = useSearchParams();
-  const [tab, setTab] = useState<Tab>(() => resolveInitialTab(searchParams.get("media")));
+  const [tab, setTab] = useState<Tab>(() =>
+    resolveInitialTab(searchParams.get("media"), preferRememberedTab)
+  );
 
   const selectTab = (value: Tab) => {
     setTab(value);
@@ -58,8 +74,8 @@ export default function MediaLibrary({ media }: { media: UnreleasedMediaSummary[
             key={value}
             onClick={() => selectTab(value)}
             className={`font-sans uppercase transition ${
-              tab === value ? "text-white" : "text-white/40 hover:text-white/70"
-            }`}
+              value === "videos" ? "translate-x-1" : value === "images" ? "-translate-x-1" : ""
+            } ${tab === value ? "text-white" : "text-white/40 hover:text-white/70"}`}
           >
             {label}
           </button>

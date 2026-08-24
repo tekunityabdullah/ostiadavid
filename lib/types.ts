@@ -35,6 +35,11 @@ export interface Product {
   // (regular and exclusive products are separate lists on the storefront,
   // so reordering one never affects the other).
   sort_order?: number;
+  // Groups this product under a named section on the Collections page (e.g.
+  // "Self Titled"). Null/unset means it doesn't appear there at all — the
+  // Collections page only shows products an admin has explicitly assigned
+  // to a collection, not every regular product.
+  collection?: string | null;
 }
 
 export interface CartItem {
@@ -104,6 +109,9 @@ export interface UnreleasedMedia {
   album_id: string | null;
   track_number: number | null;
   created_at: string;
+  // Null means this track/video isn't for sale yet — Add to Cart stays
+  // hidden on its detail page until an admin sets a price.
+  price?: number | null;
   // Manual display order — lower shows first. Scoped within media_type
   // (Videos/Music/Images are separate grids on the site, so reordering one
   // never affects the others).

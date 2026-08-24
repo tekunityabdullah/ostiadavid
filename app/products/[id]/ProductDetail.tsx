@@ -253,7 +253,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                 href={product.external_checkout_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full max-w-sm px-8 py-3 text-xs uppercase tracking-tight font-medium text-black bg-white border-none cursor-pointer transition-colors duration-200 hover:bg-[#e5e5e5] active:scale-95 text-center no-underline"
+                className="w-full max-w-sm px-8 py-3 text-xs uppercase tracking-tight font-medium text-white border-none cursor-pointer transition-colors duration-200 active:scale-95 text-center no-underline"
               >
                 Buy Now
               </a>

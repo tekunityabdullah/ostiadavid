@@ -68,6 +68,7 @@ export default function AdminProductTile({ product, position, onDeleted, onUpdat
           {product.is_exclusive ? " · Exclusive" : ""}
           {product.is_digital ? " · Digital" : ""}
           {product.external_checkout_url ? " · External checkout" : ""}
+          {product.collection ? ` · ${product.collection}` : ""}
         </p>
       </div>
 

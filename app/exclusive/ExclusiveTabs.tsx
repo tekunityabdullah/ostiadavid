@@ -21,10 +21,15 @@ const VALID_TABS: Tab[] = ["clothes", "unreleased", "events"];
 export default function ExclusiveTabs({ products, media, events }: ExclusiveTabsProps) {
   // Lets links back into this page (e.g. from a track/video detail page's
   // "Unreleased" breadcrumb) land on the right tab instead of always
-  // resetting to Clothes.
+  // resetting to the default. Landing on /exclusive fresh — e.g. clicking
+  // the Exclusive nav link — defaults to Unreleased (which itself defaults
+  // to the Music sub-tab, see MediaLibrary's resolveInitialTab).
   const searchParams = useSearchParams();
   const requestedTab = searchParams.get("tab");
-  const initialTab = VALID_TABS.includes(requestedTab as Tab) ? (requestedTab as Tab) : "clothes";
+  const initialTab = VALID_TABS.includes(requestedTab as Tab) ? (requestedTab as Tab) : "unreleased";
+  // True only when the URL explicitly asked for Unreleased (a genuine
+  // "returning" navigation) — not when we just defaulted to it ourselves.
+  const unreleasedExplicitlyRequested = requestedTab === "unreleased";
 
   const [tab, setTab] = useState<Tab>(initialTab);
   const [eventFilter, setEventFilter] = useState<EventFilter>("upcoming");
@@ -66,8 +71,8 @@ export default function ExclusiveTabs({ products, media, events }: ExclusiveTabs
             key={value}
             onClick={() => selectTab(value)}
             className={`font-sans uppercase transition ${
-              tab === value ? "text-white" : "text-white/40 hover:text-white/70"
-            }`}
+              value === "clothes" ? "translate-x-1" : value === "events" ? "-translate-x-1" : ""
+            } ${tab === value ? "text-white" : "text-white/40 hover:text-white/70"}`}
           >
             {label}
           </button>
@@ -115,7 +120,7 @@ export default function ExclusiveTabs({ products, media, events }: ExclusiveTabs
           </p>
         ) : (
           <div className="flex justify-center">
-            <MediaLibrary media={media} />
+            <MediaLibrary media={media} preferRememberedTab={unreleasedExplicitlyRequested} />
           </div>
         ))}
 

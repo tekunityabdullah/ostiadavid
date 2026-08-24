@@ -171,6 +171,15 @@ export default function UnreleasedMediaForm({ onSuccess, albums }: UnreleasedMed
         </div>
       )}
 
+      {mediaType !== "image" && (
+        <Field
+          label="Price (optional)"
+          hint="If set, the detail page shows a working Add to Cart button for this price. Leave blank to keep it not for sale yet."
+        >
+          <input name="price" type="number" min="0" step="0.01" placeholder="900.00" className={inputClass} />
+        </Field>
+      )}
+
       <Field label="Cover image">
         <div className="flex flex-wrap items-center gap-3">
           {coverPreview && (

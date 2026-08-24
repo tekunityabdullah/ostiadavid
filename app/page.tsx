@@ -12,8 +12,8 @@ export default async function Page() {
       <Header />
       <SubNav />
 
-      <main className="pt-32 flex justify-center w-full max-w-[1400px] mx-auto">
-        <section className="flex flex-col items-center px-4 pt-6 pb-8 w-full">
+      <main className="pt-[100px] flex justify-center w-full max-w-[1400px] mx-auto">
+        <section className="flex flex-col items-center px-4 pt-0 pb-8 w-full">
           {products.length === 0 ? (
             <p className="text-sm text-white/50 uppercase tracking-tight py-12">
               No products yet. Check back soon.

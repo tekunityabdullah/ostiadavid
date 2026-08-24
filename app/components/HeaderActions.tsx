@@ -7,13 +7,17 @@ import { createClient } from "@/lib/supabase/client";
 import { useCart } from "@/lib/cart-context";
 import { cancelExclusiveSubscription } from "@/app/profile/actions";
 
-// Header icons only ever need to know "am I currently inside /exclusive",
+// Header icons only ever need to know "am I currently inside Exclusive",
 // which pathname alone answers — deliberately not using useSearchParams()
 // here, since Header renders on every page (including statically-generated
 // ones) and that hook would force a Suspense boundary everywhere it's used.
+// /unreleased/* (track/video/image detail pages, albums, playlists) counts
+// too — it's exclusive-only content living outside the /exclusive prefix,
+// so without this the cart badge and link would think you're still shopping
+// the regular site while you're actually looking at exclusive media.
 function useIsOnExclusivePage() {
   const pathname = usePathname();
-  return pathname?.startsWith("/exclusive") ?? false;
+  return pathname?.startsWith("/exclusive") || pathname?.startsWith("/unreleased") || false;
 }
 
 export function AccountLink() {
