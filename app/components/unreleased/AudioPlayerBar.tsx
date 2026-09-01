@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
+  GripHorizontal,
   Pause,
   Play,
   Repeat,
@@ -24,6 +26,37 @@ function VolumeIcon({ volume, muted }: { volume: number; muted: boolean }) {
   if (muted || volume === 0) return <VolumeX size={16} />;
   if (volume < 0.5) return <Volume1 size={16} />;
   return <Volume2 size={16} />;
+}
+
+const POSITION_STORAGE_KEY = "osita-player-bar-position";
+const EDGE_MARGIN = 16; // px from the true viewport edge to the bar's near edge
+
+type BarPosition = { x: number; y: number };
+
+// Finds the point on the (inset) viewport border nearest to an arbitrary
+// point — used so the bar's center can only ever land on an edge or corner,
+// never drift into the open middle of the screen, however it's dragged.
+function nearestPerimeterPoint(px: number, py: number, rect: { left: number; right: number; top: number; bottom: number }): BarPosition {
+  const clampedX = Math.min(Math.max(px, rect.left), rect.right);
+  const clampedY = Math.min(Math.max(py, rect.top), rect.bottom);
+  const wasOutside = px < rect.left || px > rect.right || py < rect.top || py > rect.bottom;
+
+  if (wasOutside) {
+    // Clamping alone already pinned it to the border.
+    return { x: clampedX, y: clampedY };
+  }
+
+  // Pointer is inside the rect — snap whichever axis is closer to its edge.
+  const distLeft = clampedX - rect.left;
+  const distRight = rect.right - clampedX;
+  const distTop = clampedY - rect.top;
+  const distBottom = rect.bottom - clampedY;
+  const minDist = Math.min(distLeft, distRight, distTop, distBottom);
+
+  if (minDist === distLeft) return { x: rect.left, y: clampedY };
+  if (minDist === distRight) return { x: rect.right, y: clampedY };
+  if (minDist === distTop) return { x: clampedX, y: rect.top };
+  return { x: clampedX, y: rect.bottom };
 }
 
 export default function AudioPlayerBar() {
@@ -49,11 +82,111 @@ export default function AudioPlayerBar() {
   } = useUnreleasedPlayer();
 
   const [showVolume, setShowVolume] = useState(false);
+  const pathname = usePathname();
 
-  if (!currentTrack) return null;
+  // The track's own detail page already has a full player of its own — the
+  // sticky bar is only useful for getting back to it from elsewhere, so it
+  // hides itself while you're actually looking at that page.
+  const isOnTrackPage = currentTrack && pathname === `/unreleased/${currentTrack.id}`;
+
+  // Desktop-only: the bar can be dragged, but only along the screen's edges
+  // and corners — never into the open middle. Position is remembered across
+  // navigation/reloads; mobile always keeps the plain bottom-center pill.
+  const [isDesktop, setIsDesktop] = useState(false);
+  const [position, setPosition] = useState<BarPosition | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const barRef = useRef<HTMLDivElement | null>(null);
+  const dragOffsetRef = useRef({ dx: 0, dy: 0 });
+  const halfSizeRef = useRef({ halfWidth: 0, halfHeight: 0 });
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    setIsDesktop(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(POSITION_STORAGE_KEY);
+      if (raw) setPosition(JSON.parse(raw));
+    } catch {
+      // ignore — falls back to the default bottom-center position
+    }
+  }, []);
+
+  const handleDragStart = (e: React.PointerEvent) => {
+    if (!isDesktop || !barRef.current) return;
+    e.preventDefault();
+    const rect = barRef.current.getBoundingClientRect();
+    halfSizeRef.current = { halfWidth: rect.width / 2, halfHeight: rect.height / 2 };
+    dragOffsetRef.current = {
+      dx: e.clientX - (rect.left + rect.width / 2),
+      dy: e.clientY - (rect.top + rect.height / 2),
+    };
+    setDragging(true);
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+  };
+
+  const handleDragMove = (e: React.PointerEvent) => {
+    if (!dragging) return;
+    const { halfWidth, halfHeight } = halfSizeRef.current;
+    const rect = {
+      left: EDGE_MARGIN + halfWidth,
+      right: window.innerWidth - EDGE_MARGIN - halfWidth,
+      top: EDGE_MARGIN + halfHeight,
+      bottom: window.innerHeight - EDGE_MARGIN - halfHeight,
+    };
+    const targetX = e.clientX - dragOffsetRef.current.dx;
+    const targetY = e.clientY - dragOffsetRef.current.dy;
+    setPosition(nearestPerimeterPoint(targetX, targetY, rect));
+  };
+
+  const handleDragEnd = (e: React.PointerEvent) => {
+    if (!dragging) return;
+    setDragging(false);
+    (e.target as Element).releasePointerCapture?.(e.pointerId);
+    setPosition((current) => {
+      try {
+        if (current) localStorage.setItem(POSITION_STORAGE_KEY, JSON.stringify(current));
+      } catch {
+        // ignore — position just won't persist across reloads
+      }
+      return current;
+    });
+  };
+
+  if (!currentTrack || isOnTrackPage) return null;
+
+  const draggedStyle: React.CSSProperties =
+    isDesktop && position
+      ? { left: position.x, top: position.y, bottom: "auto", transform: "translate(-50%, -50%)" }
+      : {};
 
   return (
-    <div className="fixed inset-x-0 bottom-3 z-150 mx-auto flex w-[86%] max-w-sm flex-col gap-2 rounded-lg border border-white/10 bg-black/90 px-4 py-3 backdrop-blur-md sm:px-6">
+    <div
+      ref={barRef}
+      style={draggedStyle}
+      className={`fixed z-150 flex w-[86%] max-w-sm flex-col gap-2 rounded-lg border border-white/10 bg-black/90 px-4 py-3 backdrop-blur-md sm:px-6 ${
+        isDesktop && position ? "" : "inset-x-0 bottom-3 mx-auto"
+      }`}
+    >
+      {isDesktop && (
+        <div
+          onPointerDown={handleDragStart}
+          onPointerMove={handleDragMove}
+          onPointerUp={handleDragEnd}
+          title="Drag to move"
+          aria-label="Drag to move player"
+          className={`absolute -top-2.5 left-1/2 flex h-4 w-8 -translate-x-1/2 items-center justify-center rounded-full border border-white/15 bg-black/90 text-white/70 shadow-[0_2px_8px_rgba(0,0,0,0.5)] transition hover:border-white/30 hover:text-white ${
+            dragging ? "cursor-grabbing scale-110 border-white/40 text-white" : "cursor-grab"
+          }`}
+        >
+          <GripHorizontal size={12} />
+        </div>
+      )}
+
       <div className="flex items-center gap-4">
         <Link
           href={`/unreleased/${currentTrack.id}`}

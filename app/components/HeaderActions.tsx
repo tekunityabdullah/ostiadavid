@@ -27,15 +27,34 @@ export function AccountLink() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [open, setOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
       setHref(user ? "/profile" : "/signup");
       setLoggedIn(Boolean(user));
+      if (!user) return;
+
+      setEmail(user.email ?? "");
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user.id)
+        .single();
+      setFullName(profile?.full_name ?? "");
     });
   }, []);
+
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    setOpen(false);
+    router.push("/login");
+    router.refresh();
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -95,7 +114,7 @@ export function AccountLink() {
               onClick={() => setOpen(false)}
               className="block px-4 py-2.5 text-xs font-sans uppercase text-white/80 transition hover:bg-white/10 hover:text-white"
             >
-              See Orders
+              See Exclusive Orders
             </Link>
             <Link
               href="/"
@@ -111,6 +130,49 @@ export function AccountLink() {
             >
               {cancelling ? "Cancelling..." : "Cancel Subscription"}
             </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Regular (non-Exclusive) site, logged in: the avatar opens a small
+  // account card instead of just linking to /profile — name, email, then
+  // See Orders / Sign Out, nothing else.
+  if (loggedIn) {
+    return (
+      <div ref={menuRef} className="relative">
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="bg-transparent border-none text-white cursor-pointer p-1 flex items-center transition-opacity duration-200 hover:opacity-70 active:scale-95 [&_svg]:w-5 [&_svg]:h-5"
+          aria-label="Account"
+          aria-expanded={open}
+        >
+          {icon}
+        </button>
+
+        {open && (
+          <div className="absolute right-0 top-full mt-3 w-64 border border-white/15 bg-black p-5 text-center">
+            <p className="text-base font-medium uppercase tracking-wide text-white">
+              {fullName || "Member"}
+            </p>
+            <p className="mt-1 text-xs text-white/40">{email}</p>
+
+            <div className="mt-4 flex flex-col gap-3">
+              <Link
+                href="/profile"
+                onClick={() => setOpen(false)}
+                className="text-xs font-sans uppercase text-white/80 transition hover:text-white"
+              >
+                See Orders
+              </Link>
+              <button
+                onClick={handleSignOut}
+                className="text-xs font-sans uppercase text-white/80 transition hover:text-white"
+              >
+                Sign Out
+              </button>
+            </div>
           </div>
         )}
       </div>

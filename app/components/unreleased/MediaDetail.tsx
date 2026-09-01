@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
   ChevronLeft,
@@ -61,9 +62,9 @@ export default function MediaDetail({ item, related, initialStreamUrl }: MediaDe
 
       {related.length > 0 && (
         <section className={item.media_type === "video" ? "mt-10" : "mt-16"}>
-          {item.media_type !== "video" && (
+          {item.media_type === "image" && (
             <h2 className="mb-4 px-1 text-sm font-medium uppercase tracking-[0.15em] text-white">
-              {item.media_type === "image" ? "More Images" : "More Tracks"}
+              More Images
             </h2>
           )}
           {item.media_type === "video" ? (
@@ -90,7 +91,7 @@ export default function MediaDetail({ item, related, initialStreamUrl }: MediaDe
               ))}
             </div>
           ) : (
-            <AudioTrackList tracks={related} likedIds={liked} onToggleLike={toggleLike} />
+            <AudioTrackList tracks={related} likedIds={liked} onToggleLike={toggleLike} minimal />
           )}
         </section>
       )}
@@ -114,6 +115,22 @@ function AudioDetail({ item }: { item: UnreleasedMediaSummary }) {
   } = useUnreleasedPlayer();
   const { addItem } = useCart();
   const [added, setAdded] = useState(false);
+  const router = useRouter();
+  const prevTrackIdRef = useRef<string | null>(null);
+
+  // Keeps this page in sync with what's actually playing: if this track
+  // was the one active here and Next/Previous/auto-advance moves playback
+  // on to a different one, follow it to that track's own page — same as
+  // Spotify does — instead of staying put while the bottom bar quietly
+  // moves on to something else.
+  useEffect(() => {
+    const prevId = prevTrackIdRef.current;
+    prevTrackIdRef.current = currentTrack?.id ?? null;
+
+    if (prevId === item.id && currentTrack && currentTrack.id !== item.id) {
+      router.push(`/unreleased/${currentTrack.id}`);
+    }
+  }, [currentTrack, item.id, router]);
 
   const handleAddToCart = () => {
     if (item.price == null) return;
@@ -404,6 +421,18 @@ function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initi
     });
   };
 
+  // Desktop equivalent of the tap above, via hover: moving the cursor onto
+  // the video shows the overlay and holds it up for as long as the cursor
+  // stays there; moving away schedules the same auto-hide — like YouTube.
+  const handleMouseEnter = () => {
+    setControlsVisible(true);
+    clearHideTimer();
+  };
+
+  const handleMouseLeave = () => {
+    if (isPlaying) scheduleAutoHide();
+  };
+
   const skip = (seconds: number) => {
     const video = videoRef.current;
     if (!video) return;
@@ -443,7 +472,15 @@ function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initi
 
   return (
     <div>
+      {!isFullscreen && (
+        <h1 className="mb-3 text-lg font-medium uppercase tracking-wide text-white sm:text-xl">
+          {item.title}
+        </h1>
+      )}
+
       <div
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         className={
           isFullscreen
             ? "fixed inset-0 z-300 flex items-center justify-center bg-black"
@@ -479,25 +516,26 @@ function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initi
                 className="h-full w-full cursor-pointer object-contain"
               />
 
-              {/* Title overlay, only while the controls are shown */}
-              <div
-                className={`pointer-events-none absolute inset-x-0 top-0 bg-gradient-to-b from-black/70 to-transparent px-4 py-3 transition-opacity duration-300 ${
-                  controlsVisible ? "opacity-100" : "opacity-0"
-                }`}
-              >
-                <p className="text-sm font-medium uppercase tracking-wide text-white sm:text-base">
-                  {item.title}
-                </p>
-              </div>
+              {/* In fullscreen there's no "above the video" position left —
+                  the video fills the whole viewport — so the title moves
+                  into an overlay there instead. Always visible (unlike the
+                  transport controls below), not tied to controlsVisible. */}
+              {isFullscreen && (
+                <div className="pointer-events-none absolute inset-x-0 top-0 bg-gradient-to-b from-black/70 to-transparent px-4 py-3">
+                  <p className="text-sm font-medium uppercase tracking-wide text-white sm:text-base">
+                    {item.title}
+                  </p>
+                </div>
+              )}
 
               {/* Floating control card, centered within the video like the reference design — a translucent dark pill, not a solid white block, so it sits on the video instead of standing out as a box. */}
               <div
-                className={`absolute bottom-3 left-1/2 w-[55%] max-w-[200px] -translate-x-1/2 rounded-md bg-black/50 px-2.5 py-1.5 backdrop-blur-sm transition-opacity duration-300 sm:bottom-4 ${
+                className={`absolute bottom-3 left-1/2 w-[70%] max-w-[280px] -translate-x-1/2 rounded-md bg-black/50 px-3 py-2 backdrop-blur-sm transition-opacity duration-300 sm:bottom-4 ${
                   controlsVisible ? "opacity-100" : "pointer-events-none opacity-0"
                 }`}
               >
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[8px] tabular-nums text-white/70">
+                  <span className="text-[9px] tabular-nums text-white/70">
                     {formatTime(currentTime)}
                   </span>
                   <input
@@ -515,35 +553,35 @@ function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initi
                       background: `linear-gradient(to right, white ${progressPercent}%, rgba(255,255,255,0.3) ${progressPercent}%)`,
                     }}
                   />
-                  <span className="text-[8px] tabular-nums text-white/70">
+                  <span className="text-[9px] tabular-nums text-white/70">
                     -{formatTime(remaining)}
                   </span>
                 </div>
-                <div className="mt-0.5 flex items-center justify-center gap-3">
+                <div className="mt-0.5 flex items-center justify-center gap-4">
                   <button
                     onClick={() => skip(-10)}
                     aria-label="Back 10 seconds"
-                    className="text-white/70 transition hover:text-white"
+                    className="p-1.5 text-white/70 transition hover:text-white"
                   >
-                    <SkipBack size={11} fill="currentColor" />
+                    <SkipBack size={15} fill="currentColor" />
                   </button>
                   <button
                     onClick={togglePlay}
                     aria-label={isPlaying ? "Pause" : "Play"}
-                    className="text-white transition hover:opacity-70"
+                    className="p-1.5 text-white transition hover:opacity-70"
                   >
                     {isPlaying ? (
-                      <Pause size={13} fill="white" />
+                      <Pause size={18} fill="white" />
                     ) : (
-                      <Play size={13} fill="white" className="ml-0.5" />
+                      <Play size={18} fill="white" className="ml-0.5" />
                     )}
                   </button>
                   <button
                     onClick={() => skip(10)}
                     aria-label="Forward 10 seconds"
-                    className="text-white/70 transition hover:text-white"
+                    className="p-1.5 text-white/70 transition hover:text-white"
                   >
-                    <SkipForward size={11} fill="currentColor" />
+                    <SkipForward size={15} fill="currentColor" />
                   </button>
                 </div>
               </div>
@@ -560,14 +598,14 @@ function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initi
               type="button"
               onClick={toggleFullscreen}
               aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
-              className={`absolute bottom-3 right-3 text-white/80 transition-opacity duration-300 hover:text-white sm:bottom-4 sm:right-4 ${
+              className={`absolute bottom-2 right-2 p-2 text-white/80 transition-opacity duration-300 hover:text-white sm:bottom-3 sm:right-3 ${
                 controlsVisible ? "opacity-100" : "pointer-events-none opacity-0"
               }`}
             >
               {isFullscreen ? (
-                <Minimize size={22} strokeWidth={1.5} />
+                <Minimize size={26} strokeWidth={1.5} />
               ) : (
-                <Maximize size={22} strokeWidth={1.5} />
+                <Maximize size={26} strokeWidth={1.5} />
               )}
             </button>
           )}

@@ -5,6 +5,7 @@ import { Heart, X } from "lucide-react";
 import type { UnreleasedMediaSummary } from "@/lib/types";
 import WaveformIcon from "./WaveformIcon";
 import AddToPlaylistMenu from "./AddToPlaylistMenu";
+import { useUnreleasedPlayer } from "./PlayerProvider";
 
 interface MusicGridProps {
   tracks: UnreleasedMediaSummary[];
@@ -17,14 +18,26 @@ interface MusicGridProps {
 
 export default function MusicGrid({ tracks, likedIds, onToggleLike, onRemove, hideActions }: MusicGridProps) {
   const router = useRouter();
+  const { playTrack } = useUnreleasedPlayer();
 
   if (!tracks.length) return null;
 
   return (
-    <div className="grid grid-cols-3 gap-2 sm:gap-4">
+    // Fixed-count grid on mobile/tablet (always exactly 3 across), but
+    // switches to a fixed-width flex-wrap on desktop instead of more grid
+    // columns — a rigid column count leaves a short last row hugging the
+    // left with empty tracks after it, while flex-wrap + justify-center
+    // naturally centers however many tiles fit per row.
+    <div className="grid grid-cols-3 gap-2 sm:gap-4 lg:flex lg:flex-wrap lg:justify-center">
       {tracks.map((track) => {
         const isLiked = likedIds?.has(track.id) ?? false;
-        const openDetail = () => router.push(`/unreleased/${track.id}`);
+        // Clicking a track from the grid starts it playing immediately —
+        // same as tapping a row in a track list — and takes you to its page,
+        // instead of landing there paused waiting for a manual play press.
+        const openDetail = () => {
+          playTrack(track);
+          router.push(`/unreleased/${track.id}`);
+        };
 
         return (
           <div
@@ -38,7 +51,7 @@ export default function MusicGrid({ tracks, likedIds, onToggleLike, onRemove, hi
                 openDetail();
               }
             }}
-            className="group grid cursor-pointer gap-2 text-left"
+            className="group grid cursor-pointer gap-2 text-left lg:w-40 lg:shrink-0"
           >
             <div className="relative flex aspect-square items-center justify-center overflow-hidden border border-white/15">
               {track.cover_image ? (

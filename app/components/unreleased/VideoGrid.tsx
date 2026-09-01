@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Heart, Play, Video as VideoIcon, X } from "lucide-react";
+import { Heart, Video as VideoIcon, X } from "lucide-react";
 import type { UnreleasedMediaSummary } from "@/lib/types";
 import AddToPlaylistMenu from "./AddToPlaylistMenu";
 import { getYouTubeThumbnail } from "./youtube";
@@ -58,12 +58,6 @@ export default function VideoGrid({ videos, likedIds, onToggleLike, onRemove, tw
               )}
 
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" />
-
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 transition group-hover:opacity-100">
-                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition group-hover:scale-105">
-                  <Play size={16} fill="black" className="ml-0.5 text-black" />
-                </span>
-              </div>
 
               {!hideActions && onToggleLike && (
                 <button

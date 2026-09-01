@@ -32,6 +32,11 @@ interface AudioTrackListProps {
   likedIds: Set<string>;
   onToggleLike: (id: string) => void;
   onRemove?: (id: string) => void;
+  // Strips this down to just the thumbnail, song name, and duration — no
+  // header (play all / shuffle / track count), no artist subtitle, no
+  // like/playlist icons, no dividers. Used for the "More Tracks" list under
+  // a track's own detail page, which doesn't need a second transport UI.
+  minimal?: boolean;
 }
 
 export default function AudioTrackList({
@@ -39,6 +44,7 @@ export default function AudioTrackList({
   likedIds,
   onToggleLike,
   onRemove,
+  minimal = false,
 }: AudioTrackListProps) {
   const {
     currentTrack,
@@ -65,37 +71,84 @@ export default function AudioTrackList({
 
   return (
     <div className="w-full">
-      <div className="mb-5 flex items-center gap-4 px-1">
-        <button
-          onClick={handlePlayAll}
-          aria-label={isLibraryPlaying ? "Pause" : "Play all"}
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-black shadow-[0_4px_20px_rgba(255,255,255,0.12)] transition hover:scale-105 active:scale-95"
-        >
-          {isLibraryPlaying ? (
-            <Pause size={18} fill="black" />
-          ) : (
-            <Play size={18} fill="black" className="ml-0.5" />
-          )}
-        </button>
-        <button
-          onClick={toggleShuffle}
-          aria-label="Toggle shuffle"
-          aria-pressed={shuffle}
-          className={`flex h-9 w-9 items-center justify-center transition hover:opacity-70 ${
-            shuffle ? "text-white" : "text-white/40"
-          }`}
-        >
-          <Shuffle size={18} />
-        </button>
-        <span className="ml-auto text-[10px] uppercase tracking-[0.2em] text-white/30">
-          {tracks.length} {tracks.length === 1 ? "track" : "tracks"}
-        </span>
-      </div>
+      {!minimal && (
+        <div className="mb-5 flex items-center gap-4 px-1">
+          <button
+            onClick={handlePlayAll}
+            aria-label={isLibraryPlaying ? "Pause" : "Play all"}
+            className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-black shadow-[0_4px_20px_rgba(255,255,255,0.12)] transition hover:scale-105 active:scale-95"
+          >
+            {isLibraryPlaying ? (
+              <Pause size={18} fill="black" />
+            ) : (
+              <Play size={18} fill="black" className="ml-0.5" />
+            )}
+          </button>
+          <button
+            onClick={toggleShuffle}
+            aria-label="Toggle shuffle"
+            aria-pressed={shuffle}
+            className={`flex h-9 w-9 items-center justify-center transition hover:opacity-70 ${
+              shuffle ? "text-white" : "text-white/40"
+            }`}
+          >
+            <Shuffle size={18} />
+          </button>
+          <span className="ml-auto text-[10px] uppercase tracking-[0.2em] text-white/30">
+            {tracks.length} {tracks.length === 1 ? "track" : "tracks"}
+          </span>
+        </div>
+      )}
 
-      <div className="flex flex-col border-t border-white/10">
+      <div className={`flex flex-col ${minimal ? "" : "border-t border-white/10"}`}>
         {tracks.map((track, index) => {
           const isActive = currentTrack?.id === track.id;
           const isLiked = likedIds.has(track.id);
+
+          if (minimal) {
+            return (
+              <div
+                key={track.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => playTrack(track)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    playTrack(track);
+                  }
+                }}
+                className={`flex cursor-pointer items-center gap-3 px-2 py-3 text-left transition-colors duration-200 ${
+                  isActive ? "bg-white/[0.07]" : "hover:bg-white/[0.04]"
+                }`}
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden bg-white/5 sm:h-12 sm:w-12">
+                  {track.cover_image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={track.cover_image}
+                      alt={track.title}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <WaveformIcon fill />
+                  )}
+                </span>
+
+                <span
+                  className={`min-w-0 flex-1 truncate text-sm tracking-tight ${
+                    isActive ? "text-white" : "text-white/85"
+                  }`}
+                >
+                  {track.title}
+                </span>
+
+                <span className="shrink-0 text-xs tabular-nums text-white/40">
+                  {formatTime(track.duration_seconds)}
+                </span>
+              </div>
+            );
+          }
 
           return (
             <div

@@ -81,27 +81,18 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
               {audioMatches.length > 0 && (
                 <div className="w-full px-3 md:px-[60px]">
-                  <h2 className="mb-4 text-sm font-medium uppercase tracking-[0.15em] text-white">
-                    Music
-                  </h2>
                   <MusicGrid tracks={audioMatches} hideActions />
                 </div>
               )}
 
               {videoMatches.length > 0 && (
                 <div className="w-full px-3 md:px-[60px]">
-                  <h2 className="mb-4 text-sm font-medium uppercase tracking-[0.15em] text-white">
-                    Videos
-                  </h2>
                   <VideoGrid videos={videoMatches} hideActions />
                 </div>
               )}
 
               {imageMatches.length > 0 && (
                 <div className="w-full px-3 md:px-[60px]">
-                  <h2 className="mb-4 text-sm font-medium uppercase tracking-[0.15em] text-white">
-                    Images
-                  </h2>
                   <ImageGrid images={imageMatches} hideActions />
                 </div>
               )}

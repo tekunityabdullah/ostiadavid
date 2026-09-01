@@ -1,22 +1,24 @@
+import Link from "next/link";
+
 export default function Footer() {
   return (
     <footer className="flex flex-col items-center gap-3 px-4 py-6 w-full">
       <nav className="flex flex-col items-center gap-2">
-        <a className="text-[7px] uppercase text-white hover:opacity-70">
+        <Link href="/terms" className="text-[7px] uppercase text-white hover:opacity-70">
           TERMS & CONDITIONS
-        </a>
-        <a className="text-[7px] uppercase text-white hover:opacity-70">
+        </Link>
+        <Link href="/privacy" className="text-[7px] uppercase text-white hover:opacity-70">
           PRIVACY POLICY
-        </a>
-        <a className="text-[7px] uppercase text-white hover:opacity-70">
+        </Link>
+        <Link href="/cookies" className="text-[7px] uppercase text-white hover:opacity-70">
           COOKIES
-        </a>
-        <a className="text-[7px] uppercase text-white hover:opacity-70">
+        </Link>
+        <Link href="/do-not-sell-my-information" className="text-[7px] uppercase text-white hover:opacity-70">
           DO NOT SELL MY INFORMATION
-        </a>
-        <a className="text-[7px] uppercase text-white hover:opacity-70">
+        </Link>
+        <span className="text-[7px] uppercase text-white">
           © XII00 / YVNG ROCKSTXRS™ ALL RIGHTS RESERVED
-        </a>
+        </span>
       </nav>
       {/* Social icons */}
       <div className="flex gap-4 mt-2">

@@ -157,7 +157,13 @@ export default function ProductDetail({ product }: ProductDetailProps) {
               {product.name}
             </h1>
             {displayPrice != null && (
-              <p className="text-base font-medium">{formatPrice(displayPrice)}</p>
+              <p
+                className={`text-base font-medium ${
+                  product.external_checkout_url ? "-mt-4" : ""
+                }`}
+              >
+                {formatPrice(displayPrice)}
+              </p>
             )}
 
             {colors.length > 0 && (
