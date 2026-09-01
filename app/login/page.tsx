@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getPostLoginRedirect } from "@/lib/getPostLoginRedirect";
 import Footer from "../components/Footer";
@@ -10,7 +9,6 @@ import { Eye, EyeOff } from "lucide-react";
 
 
 export default function Page() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -41,8 +39,14 @@ export default function Page() {
       return;
     }
 
-    router.push(await getPostLoginRedirect(supabase));
-    router.refresh();
+    // A hard navigation here — not router.push()/refresh() — matters:
+    // right after an auth change, Next's client-side router cache can
+    // still serve a page rendered for whoever was logged in before (or
+    // logged out), which is exactly how a regular account could
+    // momentarily/persistently see Exclusive content or vice versa. A full
+    // reload guarantees the next page is rendered fresh against the new
+    // session, no stale cache involved.
+    window.location.href = await getPostLoginRedirect(supabase);
   }
 
   return (

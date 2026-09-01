@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import BackgroundClipVideo from "../../components/BackgroundClipVideo";
@@ -26,13 +25,17 @@ interface ExistingAccount {
 }
 
 function SignupForm() {
-  const router = useRouter();
   const stripe = useStripe();
   const elements = useElements();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [fullName, setFullName] = useState("");
+  // Two separate fields (not one "Full Name" box) so the stored name
+  // always has a real space between first and last, rather than depending
+  // on the person typing one themselves into a single field.
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const fullName = `${firstName} ${lastName}`.trim();
   const [zipCode, setZipCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -63,7 +66,11 @@ function SignupForm() {
           .select("full_name")
           .eq("id", user.id)
           .single();
-        if (profile?.full_name) setFullName(profile.full_name);
+        if (profile?.full_name) {
+          const parts = profile.full_name.trim().split(/\s+/);
+          setFirstName(parts[0] ?? "");
+          setLastName(parts.slice(1).join(" "));
+        }
       }
       setCheckingSession(false);
     });
@@ -157,9 +164,11 @@ function SignupForm() {
     }
 
     if (existingAccount) {
-      // Already logged in — no need to log in again.
-      router.push("/exclusive");
-      router.refresh();
+      // Already logged in, just upgraded — a hard navigation (not
+      // router.push/refresh) so the account_type change is picked up
+      // fresh instead of the client router cache still showing the
+      // pre-upgrade (non-Exclusive) view.
+      window.location.href = "/exclusive";
     } else {
       window.location.href = "/login?exclusive=success";
     }
@@ -177,13 +186,22 @@ function SignupForm() {
         </p>
       )}
 
-      <input
-        type="text"
-        placeholder="FULL NAME"
-        value={fullName}
-        onChange={(e) => setFullName(e.target.value)}
-        className="w-full px-4 py-2 bg-transparent text-white text-[10px] outline-none text-center placeholder:text-white/40 placeholder:text-[10px]"
-      />
+      <div className="grid w-full grid-cols-2 gap-2">
+        <input
+          type="text"
+          placeholder="FIRST NAME"
+          value={firstName}
+          onChange={(e) => setFirstName(e.target.value)}
+          className="w-full px-4 py-2 bg-transparent text-white text-[10px] outline-none text-center placeholder:text-white/40 placeholder:text-[10px]"
+        />
+        <input
+          type="text"
+          placeholder="LAST NAME"
+          value={lastName}
+          onChange={(e) => setLastName(e.target.value)}
+          className="w-full px-4 py-2 bg-transparent text-white text-[10px] outline-none text-center placeholder:text-white/40 placeholder:text-[10px]"
+        />
+      </div>
 
       {!existingAccount && (
         <>

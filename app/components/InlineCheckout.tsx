@@ -117,11 +117,11 @@ function InlineCheckoutForm({ items, onSuccess, submitLabel = "PAY" }: InlineChe
         </h2>
 
         <div className="flex justify-between text-sm text-white/70">
-          <span>Subtotal</span>
+          <span className="uppercase tracking-tight">Subtotal</span>
           <span>{formatPrice(subtotal)}</span>
         </div>
         <div className="flex justify-between text-sm text-white/70">
-          <span>Shipping</span>
+          <span className="uppercase tracking-tight">Shipping</span>
           <span>{formatPrice(shipping)}</span>
         </div>
 
@@ -140,7 +140,7 @@ function InlineCheckoutForm({ items, onSuccess, submitLabel = "PAY" }: InlineChe
             placeholder="Full name"
             value={address.name}
             onChange={(e) => updateAddress("name", e.target.value)}
-            className="w-full px-4 py-3 bg-transparent border border-white/20 text-white text-sm outline-none placeholder:text-white/40"
+            className="w-full px-4 py-3 bg-transparent border border-white/20 text-white text-sm outline-none placeholder:text-white/40 placeholder:uppercase"
             autoComplete="name"
           />
           <input
@@ -148,7 +148,7 @@ function InlineCheckoutForm({ items, onSuccess, submitLabel = "PAY" }: InlineChe
             placeholder="Address line 1"
             value={address.address1}
             onChange={(e) => updateAddress("address1", e.target.value)}
-            className="w-full px-4 py-3 bg-transparent border border-white/20 text-white text-sm outline-none placeholder:text-white/40"
+            className="w-full px-4 py-3 bg-transparent border border-white/20 text-white text-sm outline-none placeholder:text-white/40 placeholder:uppercase"
             autoComplete="address-line1"
           />
           <input
@@ -156,7 +156,7 @@ function InlineCheckoutForm({ items, onSuccess, submitLabel = "PAY" }: InlineChe
             placeholder="Address line 2 (optional)"
             value={address.address2}
             onChange={(e) => updateAddress("address2", e.target.value)}
-            className="w-full px-4 py-3 bg-transparent border border-white/20 text-white text-sm outline-none placeholder:text-white/40"
+            className="w-full px-4 py-3 bg-transparent border border-white/20 text-white text-sm outline-none placeholder:text-white/40 placeholder:uppercase"
             autoComplete="address-line2"
           />
           <div className="flex gap-2">
@@ -165,7 +165,7 @@ function InlineCheckoutForm({ items, onSuccess, submitLabel = "PAY" }: InlineChe
               placeholder="City"
               value={address.city}
               onChange={(e) => updateAddress("city", e.target.value)}
-              className="w-1/2 px-4 py-3 bg-transparent border border-white/20 text-white text-sm outline-none placeholder:text-white/40"
+              className="w-1/2 px-4 py-3 bg-transparent border border-white/20 text-white text-sm outline-none placeholder:text-white/40 placeholder:uppercase"
               autoComplete="address-level2"
             />
             <input
@@ -173,7 +173,7 @@ function InlineCheckoutForm({ items, onSuccess, submitLabel = "PAY" }: InlineChe
               placeholder="State"
               value={address.stateCode}
               onChange={(e) => updateAddress("stateCode", e.target.value)}
-              className="w-1/4 px-4 py-3 bg-transparent border border-white/20 text-white text-sm outline-none placeholder:text-white/40"
+              className="w-1/4 px-4 py-3 bg-transparent border border-white/20 text-white text-sm outline-none placeholder:text-white/40 placeholder:uppercase"
               autoComplete="address-level1"
             />
             <input
@@ -181,7 +181,7 @@ function InlineCheckoutForm({ items, onSuccess, submitLabel = "PAY" }: InlineChe
               placeholder="ZIP"
               value={address.zip}
               onChange={(e) => updateAddress("zip", e.target.value)}
-              className="w-1/4 px-4 py-3 bg-transparent border border-white/20 text-white text-sm outline-none placeholder:text-white/40"
+              className="w-1/4 px-4 py-3 bg-transparent border border-white/20 text-white text-sm outline-none placeholder:text-white/40 placeholder:uppercase"
               autoComplete="postal-code"
             />
           </div>
@@ -192,7 +192,7 @@ function InlineCheckoutForm({ items, onSuccess, submitLabel = "PAY" }: InlineChe
               value={address.countryCode}
               onChange={(e) => updateAddress("countryCode", e.target.value.toUpperCase())}
               maxLength={2}
-              className="w-1/2 px-4 py-3 bg-transparent border border-white/20 text-white text-sm outline-none placeholder:text-white/40"
+              className="w-1/2 px-4 py-3 bg-transparent border border-white/20 text-white text-sm outline-none placeholder:text-white/40 placeholder:uppercase"
               autoComplete="country"
             />
             <input
@@ -200,7 +200,7 @@ function InlineCheckoutForm({ items, onSuccess, submitLabel = "PAY" }: InlineChe
               placeholder="Phone (optional)"
               value={address.phone}
               onChange={(e) => updateAddress("phone", e.target.value)}
-              className="w-1/2 px-4 py-3 bg-transparent border border-white/20 text-white text-sm outline-none placeholder:text-white/40"
+              className="w-1/2 px-4 py-3 bg-transparent border border-white/20 text-white text-sm outline-none placeholder:text-white/40 placeholder:uppercase"
               autoComplete="tel"
             />
           </div>
@@ -218,8 +218,10 @@ function InlineCheckoutForm({ items, onSuccess, submitLabel = "PAY" }: InlineChe
                   base: {
                     color: "#ffffff",
                     fontSize: "14px",
+                    textTransform: "uppercase",
                     "::placeholder": {
                       color: "rgba(255, 255, 255, 0.4)",
+                      textTransform: "uppercase",
                     },
                   },
                 },

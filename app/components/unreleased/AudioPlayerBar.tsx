@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  GripHorizontal,
+  ChevronLeft,
+  ChevronRight,
   Pause,
   Play,
   Repeat,
@@ -19,7 +20,6 @@ import {
 } from "lucide-react";
 import { useUnreleasedPlayer } from "./PlayerProvider";
 import { formatTime } from "./format";
-import { ARTIST_NAME } from "./constants";
 import WaveformIcon from "./WaveformIcon";
 
 function VolumeIcon({ volume, muted }: { volume: number; muted: boolean }) {
@@ -59,6 +59,14 @@ function nearestPerimeterPoint(px: number, py: number, rect: { left: number; rig
   return { x: clampedX, y: rect.bottom };
 }
 
+// Buttons, links, and the range sliders need normal clicks/drags to keep
+// working — only a pointerdown that starts outside all of those should
+// pick the bar up and start moving it.
+function isInteractiveTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  return Boolean(target.closest("button, a, input"));
+}
+
 export default function AudioPlayerBar() {
   const {
     currentTrack,
@@ -82,6 +90,9 @@ export default function AudioPlayerBar() {
   } = useUnreleasedPlayer();
 
   const [showVolume, setShowVolume] = useState(false);
+  // Collapses the bar down to just cover art + play/pause — playback keeps
+  // going the whole time, this is purely a "get it out of the way" toggle.
+  const [minimized, setMinimized] = useState(false);
   const pathname = usePathname();
 
   // The track's own detail page already has a full player of its own — the
@@ -89,9 +100,10 @@ export default function AudioPlayerBar() {
   // hides itself while you're actually looking at that page.
   const isOnTrackPage = currentTrack && pathname === `/unreleased/${currentTrack.id}`;
 
-  // Desktop-only: the bar can be dragged, but only along the screen's edges
-  // and corners — never into the open middle. Position is remembered across
-  // navigation/reloads; mobile always keeps the plain bottom-center pill.
+  // Desktop-only: drag the bar itself (no separate handle) — but only
+  // along the screen's edges and corners, never into the open middle.
+  // Position is remembered across navigation/reloads; mobile always keeps
+  // the plain bottom-center pill.
   const [isDesktop, setIsDesktop] = useState(false);
   const [position, setPosition] = useState<BarPosition | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -117,8 +129,7 @@ export default function AudioPlayerBar() {
   }, []);
 
   const handleDragStart = (e: React.PointerEvent) => {
-    if (!isDesktop || !barRef.current) return;
-    e.preventDefault();
+    if (!isDesktop || !barRef.current || isInteractiveTarget(e.target)) return;
     const rect = barRef.current.getBoundingClientRect();
     halfSizeRef.current = { halfWidth: rect.width / 2, halfHeight: rect.height / 2 };
     dragOffsetRef.current = {
@@ -126,7 +137,7 @@ export default function AudioPlayerBar() {
       dy: e.clientY - (rect.top + rect.height / 2),
     };
     setDragging(true);
-    (e.target as Element).setPointerCapture?.(e.pointerId);
+    (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
   };
 
   const handleDragMove = (e: React.PointerEvent) => {
@@ -146,7 +157,7 @@ export default function AudioPlayerBar() {
   const handleDragEnd = (e: React.PointerEvent) => {
     if (!dragging) return;
     setDragging(false);
-    (e.target as Element).releasePointerCapture?.(e.pointerId);
+    (e.currentTarget as Element).releasePointerCapture?.(e.pointerId);
     setPosition((current) => {
       try {
         if (current) localStorage.setItem(POSITION_STORAGE_KEY, JSON.stringify(current));
@@ -164,36 +175,78 @@ export default function AudioPlayerBar() {
       ? { left: position.x, top: position.y, bottom: "auto", transform: "translate(-50%, -50%)" }
       : {};
 
+  // Minimized: a small square card (cover art + title, like a grid tile)
+  // instead of the full bar — playback keeps going the whole time, this is
+  // purely a "get it out of the way" state. The chevron is the only way
+  // back to the full bar; tapping the card itself goes to the track's page.
+  if (minimized) {
+    return (
+      <div className="fixed bottom-3 right-3 z-150 flex items-start gap-0.5">
+        {/* Centered against just the image box (h-20), not the whole card
+            — the title line below the image would otherwise pull a
+            plain items-center alignment down off the image's true center. */}
+        <div className="flex h-20 shrink-0 items-center">
+          <button
+            onClick={() => setMinimized(false)}
+            aria-label="Expand player"
+            className="p-1.5 text-white transition hover:opacity-70"
+          >
+            <ChevronLeft size={26} />
+          </button>
+        </div>
+
+        <Link
+          href={`/unreleased/${currentTrack.id}`}
+          aria-label={`Go to ${currentTrack.title}`}
+          className="flex w-24 flex-col items-center gap-1.5"
+        >
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-md border border-white/10 bg-black/90 backdrop-blur-md">
+            {currentTrack.cover_image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={currentTrack.cover_image}
+                alt={currentTrack.title}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <WaveformIcon fill />
+            )}
+          </div>
+          <p className="w-full truncate text-center text-[10px] uppercase tracking-tight text-white">
+            {currentTrack.title}
+          </p>
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div
       ref={barRef}
       style={draggedStyle}
-      className={`fixed z-150 flex w-[86%] max-w-sm flex-col gap-2 rounded-lg border border-white/10 bg-black/90 px-4 py-3 backdrop-blur-md sm:px-6 ${
-        isDesktop && position ? "" : "inset-x-0 bottom-3 mx-auto"
-      }`}
+      onPointerDown={handleDragStart}
+      onPointerMove={handleDragMove}
+      onPointerUp={handleDragEnd}
+      className={`fixed z-150 flex items-center gap-0.5 ${
+        isDesktop ? (dragging ? "cursor-grabbing" : "cursor-grab") : ""
+      } ${isDesktop && position ? "" : "inset-x-0 bottom-3 justify-center"}`}
     >
-      {isDesktop && (
-        <div
-          onPointerDown={handleDragStart}
-          onPointerMove={handleDragMove}
-          onPointerUp={handleDragEnd}
-          title="Drag to move"
-          aria-label="Drag to move player"
-          className={`absolute -top-2.5 left-1/2 flex h-4 w-8 -translate-x-1/2 items-center justify-center rounded-full border border-white/15 bg-black/90 text-white/70 shadow-[0_2px_8px_rgba(0,0,0,0.5)] transition hover:border-white/30 hover:text-white ${
-            dragging ? "cursor-grabbing scale-110 border-white/40 text-white" : "cursor-grab"
-          }`}
-        >
-          <GripHorizontal size={12} />
-        </div>
-      )}
+      <button
+        onClick={() => setMinimized(true)}
+        aria-label="Minimize player"
+        className="shrink-0 p-1 text-white transition hover:opacity-70"
+      >
+        <ChevronRight size={26} />
+      </button>
 
-      <div className="flex items-center gap-4">
+      <div className="flex w-[80%] max-w-sm flex-col gap-2 rounded-lg border border-white/10 bg-black/90 px-3 py-2.5 backdrop-blur-md sm:px-6">
+      <div className="flex items-center gap-2 sm:gap-4">
         <Link
           href={`/unreleased/${currentTrack.id}`}
           aria-label={`Go to ${currentTrack.title}`}
           className="flex min-w-0 flex-1 items-center gap-3 text-left"
         >
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden bg-white/5 shadow-[0_2px_12px_rgba(0,0,0,0.4)]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden bg-white/5 shadow-[0_2px_12px_rgba(0,0,0,0.4)]">
             {currentTrack.cover_image ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -209,7 +262,6 @@ export default function AudioPlayerBar() {
             <p className="truncate text-xs uppercase tracking-tight text-white">
               {currentTrack.title}
             </p>
-            <p className="truncate text-[11px] text-white/40">{ARTIST_NAME}</p>
           </span>
         </Link>
 
@@ -319,6 +371,7 @@ export default function AudioPlayerBar() {
         <span className="text-[10px] tabular-nums text-white/40">
           {formatTime(duration)}
         </span>
+      </div>
       </div>
     </div>
   );

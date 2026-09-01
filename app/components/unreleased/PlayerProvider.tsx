@@ -282,11 +282,16 @@ export default function PlayerProvider({ children, audioTracks }: PlayerProvider
       return;
     }
 
+    // iOS Control Center's Now Playing card is pickier than desktop
+    // browsers about artwork — a root-relative path silently fails to
+    // show there, so this always resolves to a full absolute URL.
+    const artworkSrc = currentTrack.cover_image || `${window.location.origin}${FALLBACK_ARTWORK}`;
+
     navigator.mediaSession.metadata = new MediaMetadata({
       title: currentTrack.title,
       artist: ARTIST_NAME,
       artwork: [
-        { src: currentTrack.cover_image || FALLBACK_ARTWORK, sizes: "512x512", type: "image/png" },
+        { src: artworkSrc, sizes: "512x512", type: "image/png" },
       ],
     });
     navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";

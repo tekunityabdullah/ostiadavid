@@ -14,9 +14,11 @@ interface MusicGridProps {
   onRemove?: (id: string) => void;
   /** Hides the like/add-to-playlist hover icons — used on the main Unreleased library grid, which shows tiles unadorned to match the reference design. */
   hideActions?: boolean;
+  /** Force a flat 2-column grid at every breakpoint — used under a track's own detail page, matching VideoGrid's "more videos" strip. */
+  twoColumn?: boolean;
 }
 
-export default function MusicGrid({ tracks, likedIds, onToggleLike, onRemove, hideActions }: MusicGridProps) {
+export default function MusicGrid({ tracks, likedIds, onToggleLike, onRemove, hideActions, twoColumn }: MusicGridProps) {
   const router = useRouter();
   const { playTrack } = useUnreleasedPlayer();
 
@@ -27,8 +29,9 @@ export default function MusicGrid({ tracks, likedIds, onToggleLike, onRemove, hi
     // switches to a fixed-width flex-wrap on desktop instead of more grid
     // columns — a rigid column count leaves a short last row hugging the
     // left with empty tracks after it, while flex-wrap + justify-center
-    // naturally centers however many tiles fit per row.
-    <div className="grid grid-cols-3 gap-2 sm:gap-4 lg:flex lg:flex-wrap lg:justify-center">
+    // naturally centers however many tiles fit per row. twoColumn opts out
+    // of all that for a plain flat 2-across grid instead.
+    <div className={twoColumn ? "grid grid-cols-2 gap-4 sm:flex sm:justify-center sm:gap-6" : "grid grid-cols-3 gap-2 sm:gap-4 lg:flex lg:flex-wrap lg:justify-center"}>
       {tracks.map((track) => {
         const isLiked = likedIds?.has(track.id) ?? false;
         // Clicking a track from the grid starts it playing immediately —
@@ -51,7 +54,9 @@ export default function MusicGrid({ tracks, likedIds, onToggleLike, onRemove, hi
                 openDetail();
               }
             }}
-            className="group grid cursor-pointer gap-2 text-left lg:w-40 lg:shrink-0"
+            className={`group grid cursor-pointer gap-2 text-left ${
+              twoColumn ? "sm:w-40 sm:shrink-0" : "lg:w-40 lg:shrink-0"
+            }`}
           >
             <div className="relative flex aspect-square items-center justify-center overflow-hidden border border-white/15">
               {track.cover_image ? (

@@ -58,6 +58,11 @@ export interface CartItem {
   // header badge, and checkout stay scoped separately for the Exclusive
   // section vs. the regular site, even though both share one cart store.
   isExclusive?: boolean;
+  // Which table productId points into — products.id vs unreleased_media.id
+  // — so the cart page can link a line item back to its real detail page.
+  // Undefined is treated as "product" (cart items added before this field
+  // existed).
+  kind?: "product" | "media";
 }
 
 export interface ShippingAddress {

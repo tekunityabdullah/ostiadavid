@@ -31,10 +31,14 @@ export async function getStreamUrl(id: string): Promise<StreamInfo | null> {
 
   if (error || !media) return null;
 
-  const { error: countError } = await supabase.rpc("increment_unreleased_play_count", {
-    media_id: id,
-  });
-  if (countError) console.error("Failed to increment play count:", countError.message);
+  // Fire-and-forget — nothing downstream needs this to finish, and
+  // awaiting it was adding a full extra network round-trip to every
+  // single play/skip before any audio or video could start.
+  supabase
+    .rpc("increment_unreleased_play_count", { media_id: id })
+    .then(({ error: countError }) => {
+      if (countError) console.error("Failed to increment play count:", countError.message);
+    });
 
   // YouTube-linked videos have no file in our storage — the link itself is
   // already public, so it's returned as-is instead of being signed.

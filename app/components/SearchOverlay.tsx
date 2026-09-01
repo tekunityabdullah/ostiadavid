@@ -1,16 +1,16 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { useIsOnExclusivePage } from "./useIsOnExclusivePage";
 
 const TRANSITION_MS = 200;
 
 export default function SearchOverlay() {
   const router = useRouter();
-  // Suspense-safe (pathname only, no useSearchParams — see HeaderActions)
-  // — searching from inside Exclusive should only ever search Exclusive
-  // content, never the regular site's catalog.
-  const isExclusive = usePathname()?.startsWith("/exclusive") ?? false;
+  // Searching from inside Exclusive (or the Exclusive cart) should only
+  // ever search Exclusive content, never the regular site's catalog.
+  const isExclusive = useIsOnExclusivePage();
   const [isMounted, setIsMounted] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [query, setQuery] = useState("");

@@ -1,5 +1,7 @@
 "use client";
 
+import { Check } from "lucide-react";
+
 export default function TourForm() {
   return (
     <form
@@ -18,12 +20,23 @@ export default function TourForm() {
       </div>
 
       <div className="flex items-center gap-3 mt-1">
-        <input
-          type="checkbox"
-          id="tour-terms"
-          required
-          className="appearance-none w-4 h-4 border border-white bg-white/97 cursor-pointer relative checked:after:content-[''] checked:after:absolute checked:after:left-1 checked:after:top-px checked:after:w-[5px] checked:after:h-[9px] checked:after:border-r-2 checked:after:border-b-2 checked:after:border-white checked:after:rotate-45"
-        />
+        <div className="relative flex h-4 w-4 shrink-0 items-center justify-center">
+          {/* Checkboxes are replaced elements — browsers never render
+              ::before/::after content on an <input>, so a checked:after
+              checkmark silently never shows up. This puts the checkmark on
+              a sibling icon instead, toggled via the peer-checked state. */}
+          <input
+            type="checkbox"
+            id="tour-terms"
+            required
+            className="peer relative h-4 w-4 cursor-pointer appearance-none border border-white bg-white/97"
+          />
+          <Check
+            size={11}
+            strokeWidth={3}
+            className="pointer-events-none absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 text-black peer-checked:block"
+          />
+        </div>
         <label
           className="text-[10px] capitalize tracking-tight font-medium text-white cursor-pointer uppercase"
           htmlFor="tour-terms"

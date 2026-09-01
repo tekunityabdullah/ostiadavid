@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getPostLoginRedirect } from "@/lib/getPostLoginRedirect";
 import Header from "../components/Header";
@@ -10,8 +9,6 @@ import Footer from "../components/Footer";
 import { Eye, EyeOff } from "lucide-react";
 
 export default function SignupPage() {
-  const router = useRouter();
-
   // Login state
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -46,8 +43,11 @@ export default function SignupPage() {
       return;
     }
 
-    router.push(await getPostLoginRedirect(supabase));
-    router.refresh();
+    // Hard navigation, not router.push()/refresh() — avoids the client
+    // router cache serving a page rendered for the previous session (this
+    // is how a regular account could end up momentarily/persistently
+    // seeing Exclusive content after signing in, or vice versa).
+    window.location.href = await getPostLoginRedirect(supabase);
   }
 
   async function handleSignup(e: React.FormEvent) {
@@ -92,8 +92,7 @@ export default function SignupPage() {
     }
 
     if (data.session) {
-      router.push("/");
-      router.refresh();
+      window.location.href = "/";
       return;
     }
 

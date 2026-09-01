@@ -17,9 +17,8 @@ import {
 } from "lucide-react";
 import type { UnreleasedMediaSummary } from "@/lib/types";
 import { useUnreleasedPlayer } from "./PlayerProvider";
-import { useLikedMedia } from "./useLikedMedia";
-import AudioTrackList from "./AudioTrackList";
 import VideoGrid from "./VideoGrid";
+import MusicGrid from "./MusicGrid";
 import WaveformIcon from "./WaveformIcon";
 import { formatTime } from "./format";
 import { getYouTubeEmbedUrl } from "./youtube";
@@ -36,8 +35,6 @@ interface MediaDetailProps {
 }
 
 export default function MediaDetail({ item, related, initialStreamUrl }: MediaDetailProps) {
-  const { liked, toggleLike } = useLikedMedia();
-
   return (
     <div className="w-full max-w-[900px]">
       <Link
@@ -69,7 +66,9 @@ export default function MediaDetail({ item, related, initialStreamUrl }: MediaDe
           )}
           {item.media_type === "video" ? (
             <VideoGrid videos={related} twoColumn hideActions />
-          ) : item.media_type === "image" ? (
+          ) : item.media_type === "audio" ? (
+            <MusicGrid tracks={related} twoColumn hideActions />
+          ) : (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
               {related.map((img) => (
                 <Link
@@ -90,8 +89,6 @@ export default function MediaDetail({ item, related, initialStreamUrl }: MediaDe
                 </Link>
               ))}
             </div>
-          ) : (
-            <AudioTrackList tracks={related} likedIds={liked} onToggleLike={toggleLike} minimal />
           )}
         </section>
       )}
@@ -143,6 +140,7 @@ function AudioDetail({ item }: { item: UnreleasedMediaSummary }) {
       image: item.cover_image ?? FALLBACK_ARTWORK,
       isDigital: true,
       isExclusive: true,
+      kind: "media",
     });
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
@@ -165,7 +163,7 @@ function AudioDetail({ item }: { item: UnreleasedMediaSummary }) {
       </div>
 
       <div className="flex w-full items-center justify-between">
-        <h1 className="text-left text-lg font-medium uppercase tracking-wide text-white sm:text-xl">
+        <h1 className="text-left text-base font-medium uppercase tracking-wide text-white sm:text-lg">
           {item.title}
         </h1>
         <button
@@ -335,13 +333,31 @@ function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initi
       image: item.cover_image ?? "",
       isDigital: true,
       isExclusive: true,
+      kind: "media",
     });
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };
 
+  // Opening a video always takes over from whatever song is playing —
+  // stopping the audio here (unconditionally, keyed on which video this
+  // is) means it's already stopped by the time this video's autoPlay
+  // kicks in, instead of racing the effect below and losing.
   useEffect(() => {
-    if (audioIsPlaying) {
+    pauseAudio();
+  }, [item.id, pauseAudio]);
+
+  // The reverse case: audio resuming later (e.g. the sticky bar, from
+  // elsewhere on the site) while already sitting on this video's page
+  // stops the video in turn, so the two never sound at once. Tracked as a
+  // false→true transition (not just "is audio currently playing") so this
+  // doesn't fire off the stale true value still present on the very first
+  // render right as the effect above is stopping it.
+  const wasAudioPlayingRef = useRef(audioIsPlaying);
+  useEffect(() => {
+    const wasPlaying = wasAudioPlayingRef.current;
+    wasAudioPlayingRef.current = audioIsPlaying;
+    if (!wasPlaying && audioIsPlaying) {
       videoRef.current?.pause();
     }
   }, [audioIsPlaying]);
@@ -352,11 +368,16 @@ function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initi
   useEffect(() => {
     if (typeof window === "undefined" || !("mediaSession" in navigator)) return;
 
+    // iOS Control Center's Now Playing card is pickier than desktop
+    // browsers about artwork — a root-relative path silently fails to
+    // show there, so this always resolves to a full absolute URL.
+    const artworkSrc = item.cover_image || `${window.location.origin}${FALLBACK_ARTWORK}`;
+
     navigator.mediaSession.metadata = new MediaMetadata({
       title: item.title,
       artist: ARTIST_NAME,
       artwork: [
-        { src: item.cover_image || FALLBACK_ARTWORK, sizes: "512x512", type: "image/png" },
+        { src: artworkSrc, sizes: "512x512", type: "image/png" },
       ],
     });
     navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
@@ -439,33 +460,38 @@ function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initi
     video.currentTime = Math.min(Math.max(0, video.currentTime + seconds), video.duration || 0);
   };
 
-  // "Fullscreen" is our own CSS-driven overlay, not the browser/OS's native
-  // fullscreen video player — the native one (requestFullscreen /
-  // webkitEnterFullscreen) hands the whole screen over to the OS's own
-  // chrome (volume slider, AirPlay, PiP, a "..." menu, its own close
-  // button), replacing our custom title/controls entirely. This instead
-  // just expands the same video + the same title/control-card/button
-  // this component already renders to cover the viewport, so nothing
-  // outside our own UI ever shows up.
+  // "Fullscreen" fills the whole screen — including hiding the browser's
+  // own tabs/toolbar — via the real Fullscreen API, but requested on our
+  // own container div, never on the <video> element itself. Calling it on
+  // the video is what hands control to the OS/browser's native video
+  // player chrome (volume slider, AirPlay, PiP, a "..." menu, its own
+  // close button); calling it on a plain container has no such side
+  // effect — the browser just makes that element fill the screen, and
+  // everything inside it (our own title/control-card/button) stays
+  // exactly as we built it.
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const toggleFullscreen = () => setIsFullscreen((v) => !v);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      const el = containerRef.current as (HTMLDivElement & { webkitRequestFullscreen?: () => void }) | null;
+      if (el?.requestFullscreen) el.requestFullscreen().catch(() => {});
+      else el?.webkitRequestFullscreen?.();
+    } else {
+      const doc = document as Document & { webkitExitFullscreen?: () => void };
+      if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+      else doc.webkitExitFullscreen?.();
+    }
+  };
+
+  // Escape, the browser's own fullscreen-exit control, etc. all exit real
+  // fullscreen without going through toggleFullscreen — this keeps
+  // isFullscreen in sync with whatever the browser actually did.
   useEffect(() => {
-    if (!isFullscreen) return;
-
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsFullscreen(false);
-    };
-    document.addEventListener("keydown", onKeyDown);
-
-    return () => {
-      document.body.style.overflow = originalOverflow;
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [isFullscreen]);
+    const onChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
 
   const remaining = Math.max(0, (duration || 0) - currentTime);
   const progressPercent = duration ? (currentTime / duration) * 100 : 0;
@@ -479,6 +505,7 @@ function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initi
       )}
 
       <div
+        ref={containerRef}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         className={

@@ -70,18 +70,24 @@ function CartPageContent() {
                     key={item.variantId ? `${item.productId}:${item.variantId}` : item.productId}
                     className="flex gap-4 items-center border-b border-white/10 pb-6"
                   >
-                    <div className="w-24 h-24 md:w-32 md:h-32 flex-shrink-0 overflow-hidden bg-black">
+                    <Link
+                      href={item.kind === "media" ? `/unreleased/${item.productId}` : `/products/${item.productId}`}
+                      className="w-24 h-24 md:w-32 md:h-32 flex-shrink-0 overflow-hidden bg-black"
+                    >
                       <img
                         src={item.image}
                         alt={item.name}
                         className="w-full h-full object-contain"
                       />
-                    </div>
+                    </Link>
 
                     <div className="flex-1 flex flex-col gap-1">
-                      <div className="text-sm md:text-base uppercase tracking-tight font-medium text-white">
+                      <Link
+                        href={item.kind === "media" ? `/unreleased/${item.productId}` : `/products/${item.productId}`}
+                        className="text-sm md:text-base uppercase tracking-tight font-medium text-white no-underline hover:underline"
+                      >
                         {item.name}
-                      </div>
+                      </Link>
                       {item.variantLabel && (
                         <div className="text-xs uppercase tracking-tight text-white/50">
                           {item.variantLabel}
@@ -171,11 +177,11 @@ function CartPageContent() {
                     </h2>
 
                     <div className="flex justify-between text-sm text-white/70">
-                      <span>Subtotal</span>
+                      <span className="uppercase tracking-tight">Subtotal</span>
                       <span>{formatPrice(subtotal)}</span>
                     </div>
                     <div className="flex justify-between text-sm text-white/70">
-                      <span>Shipping</span>
+                      <span className="uppercase tracking-tight">Shipping</span>
                       <span>{formatPrice(shipping)}</span>
                     </div>
 
