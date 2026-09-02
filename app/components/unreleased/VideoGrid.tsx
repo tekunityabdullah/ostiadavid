@@ -22,8 +22,20 @@ export default function VideoGrid({ videos, likedIds, onToggleLike, onRemove, tw
 
   if (!videos.length) return null;
 
+  // Fewer than 3 videos in the main 3-across grid would otherwise leave a
+  // lopsided empty slot in the last row (e.g. 2 videos filling only 2 of 3
+  // columns, hugging the left) — below that count, desktop centers them as
+  // a fixed-width pair instead. Resolves itself once there are 3+ videos.
+  const compact = !twoColumn && videos.length < 3;
+
   return (
-    <div className={`grid gap-4 ${twoColumn ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-3"}`}>
+    <div
+      className={
+        twoColumn
+          ? "grid grid-cols-2 gap-4"
+          : `grid grid-cols-2 gap-4 ${compact ? "sm:flex sm:flex-wrap sm:justify-center" : "sm:grid-cols-3"}`
+      }
+    >
       {videos.map((video) => {
         const isLiked = likedIds?.has(video.id) ?? false;
         const openDetail = () => router.push(`/unreleased/${video.id}`);
@@ -41,7 +53,7 @@ export default function VideoGrid({ videos, likedIds, onToggleLike, onRemove, tw
                 openDetail();
               }
             }}
-            className="group grid cursor-pointer gap-2 text-left"
+            className={`group grid cursor-pointer gap-2 text-left ${compact ? "sm:w-72 sm:shrink-0" : ""}`}
           >
             <div className="relative flex aspect-video items-center justify-center overflow-hidden bg-white/5">
               {thumbnail ? (

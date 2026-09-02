@@ -49,7 +49,7 @@ export default function MediaDetail({ item, related, initialStreamUrl }: MediaDe
         item.youtube_url ? (
           <YouTubeVideoDetail item={item} />
         ) : (
-          <VideoDetail item={item} initialUrl={initialStreamUrl ?? null} />
+          <VideoDetail item={item} related={related} />
         )
       ) : item.media_type === "image" ? (
         <ImageDetail item={item} initialUrl={initialStreamUrl ?? null} />
@@ -284,9 +284,23 @@ function YouTubeVideoDetail({ item }: { item: UnreleasedMediaSummary }) {
   );
 }
 
-function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initialUrl: string | null }) {
+function VideoDetail({
+  item,
+  related,
+}: {
+  item: UnreleasedMediaSummary;
+  related: UnreleasedMediaSummary[];
+}) {
+  const router = useRouter();
+  // The next video in the "more videos" list below — clicking Next goes
+  // there instead of skipping forward within this video.
+  const nextVideo = related[0] ?? null;
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [url, setUrl] = useState<string | null>(initialUrl);
+  // A stable route on our own server, not a signed Supabase URL — it
+  // re-checks Exclusive access on every byte request and streams the file
+  // through, rather than ever handing out a link that plays outside a
+  // real session. Known upfront, so there's no fetch-then-set-src step.
+  const url = `/api/unreleased/media/${item.id}`;
   const [error, setError] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -395,34 +409,11 @@ function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initi
     };
   }, [item.title, item.cover_image, isPlaying]);
 
+  // Resets the error state when navigating (e.g. via Next) to a different
+  // video — url itself is always derived fresh from item.id above.
   useEffect(() => {
-    if (initialUrl) {
-      setUrl(initialUrl);
-      return;
-    }
-
-    let cancelled = false;
-
-    fetch("/api/unreleased/stream", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: item.id }),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to load stream");
-        return res.json();
-      })
-      .then((data) => {
-        if (!cancelled) setUrl(data.url);
-      })
-      .catch(() => {
-        if (!cancelled) setError(true);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [item.id, initialUrl]);
+    setError(false);
+  }, [item.id]);
 
   const togglePlay = () => {
     const video = videoRef.current;
@@ -536,6 +527,7 @@ function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initi
                 }}
                 onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
                 onLoadedMetadata={(e) => setDuration(e.currentTarget.duration || 0)}
+                onError={() => setError(true)}
                 controlsList="nodownload noremoteplayback"
                 disablePictureInPicture
                 disableRemotePlayback
@@ -604,9 +596,10 @@ function VideoDetail({ item, initialUrl }: { item: UnreleasedMediaSummary; initi
                     )}
                   </button>
                   <button
-                    onClick={() => skip(10)}
-                    aria-label="Forward 10 seconds"
-                    className="p-1.5 text-white/70 transition hover:text-white"
+                    onClick={() => nextVideo && router.push(`/unreleased/${nextVideo.id}`)}
+                    aria-label="Next video"
+                    disabled={!nextVideo}
+                    className="p-1.5 text-white/70 transition hover:text-white disabled:opacity-30"
                   >
                     <SkipForward size={15} fill="currentColor" />
                   </button>

@@ -38,12 +38,13 @@ export default async function UnreleasedDetailPage({ params }: DetailPageProps) 
     .filter((m) => m.id !== item.id && m.media_type === item.media_type)
     .slice(0, 6);
 
-  // Resolved server-side so the video/image can start fetching immediately
-  // on page load instead of waiting on a client round-trip after mount.
+  // Resolved server-side so the image can start fetching immediately on
+  // page load instead of waiting on a client round-trip after mount.
+  // Video/audio don't need this anymore — they stream through
+  // /api/unreleased/media/[id], a stable route known upfront, rather than
+  // a signed URL that has to be resolved first.
   const initialStream =
-    item.media_type === "video" || item.media_type === "image"
-      ? await getStreamUrl(item.id)
-      : null;
+    item.media_type === "image" ? await getStreamUrl(item.id) : null;
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">

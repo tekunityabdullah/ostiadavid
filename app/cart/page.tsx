@@ -10,6 +10,17 @@ import InlineCheckout from "../components/InlineCheckout";
 import { useCart } from "@/lib/cart-context";
 import { formatPrice } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
+import type { CartItem } from "@/lib/types";
+
+// Cart items added before the `kind` field existed don't have it — this
+// infers it so those older entries still link somewhere real instead of
+// 404ing, rather than requiring everyone to clear and re-add their cart.
+// unreleased media is always digital + exclusive and never has a Printful
+// variant, which no real product on this site currently matches too.
+function detailHref(item: CartItem): string {
+  const kind = item.kind ?? (item.isDigital && item.isExclusive && !item.variantId ? "media" : "product");
+  return kind === "media" ? `/unreleased/${item.productId}` : `/products/${item.productId}`;
+}
 
 function CartPageContent() {
   const { items: allItems, updateQuantity, removeItem } = useCart();
@@ -71,7 +82,7 @@ function CartPageContent() {
                     className="flex gap-4 items-center border-b border-white/10 pb-6"
                   >
                     <Link
-                      href={item.kind === "media" ? `/unreleased/${item.productId}` : `/products/${item.productId}`}
+                      href={detailHref(item)}
                       className="w-24 h-24 md:w-32 md:h-32 flex-shrink-0 overflow-hidden bg-black"
                     >
                       <img
@@ -83,8 +94,8 @@ function CartPageContent() {
 
                     <div className="flex-1 flex flex-col gap-1">
                       <Link
-                        href={item.kind === "media" ? `/unreleased/${item.productId}` : `/products/${item.productId}`}
-                        className="text-sm md:text-base uppercase tracking-tight font-medium text-white no-underline hover:underline"
+                        href={detailHref(item)}
+                        className="text-sm md:text-base uppercase tracking-tight font-medium text-white no-underline"
                       >
                         {item.name}
                       </Link>

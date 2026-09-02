@@ -21,6 +21,23 @@
   user-scalable: 0;
 }
 
+/* The @viewport rule above doesn't actually stop the zoom that matters
+   here: iOS Safari auto-zooms the whole page whenever a focused input's
+   font-size is under 16px, regardless of maximum-scale/user-scalable —
+   Apple made those a no-op for this case years ago (accessibility). This
+   is the one thing that still reliably prevents it: force every text
+   input to render at (at least) 16px specifically on phone-width screens,
+   where the quirk exists — TOUR, search, login, checkout, all of them —
+   without touching each input's own (often much smaller) intended size on
+   desktop, where this bug doesn't happen at all. */
+@media (max-width: 640px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
 /* Make layout rigid */
 * {
   -webkit-tap-highlight-color: transparent;

@@ -16,15 +16,13 @@ const FALLBACK_ARTWORK = "/audio-placeholder.png";
 
 export type RepeatMode = "off" | "all" | "one";
 
-async function fetchStreamUrl(id: string): Promise<string> {
-  const res = await fetch("/api/unreleased/stream", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ id }),
-  });
-  if (!res.ok) throw new Error("Failed to load stream");
-  const data = await res.json();
-  return data.url as string;
+// A stable route on our own server, not a signed Supabase URL — the route
+// itself re-checks Exclusive access on every request and streams the file
+// through rather than ever handing out a link that works outside a real
+// session. No fetch needed first either: unlike a signed URL, this path
+// never changes, so it can be set directly as the element's src.
+function streamUrl(id: string): string {
+  return `/api/unreleased/media/${id}`;
 }
 
 interface PlayerContextValue {
@@ -96,8 +94,7 @@ export default function PlayerProvider({ children, audioTracks }: PlayerProvider
     currentTrackRef.current = track;
     recordRecentlyPlayed(track.id);
     try {
-      const url = await fetchStreamUrl(track.id);
-      audio.src = url;
+      audio.src = streamUrl(track.id);
       audio.currentTime = 0;
       await audio.play();
     } catch (err) {
