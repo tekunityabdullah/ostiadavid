@@ -1,4 +1,4 @@
-  import { createClient } from "@/lib/supabase/server";
+  import { createClient, createServiceClient } from "@/lib/supabase/server";
   import type { Product } from "@/lib/types";
   import { getAccountType, isAdmin } from "@/lib/auth";
 
@@ -41,7 +41,16 @@
   }
 
   export async function getExclusiveProducts(): Promise<Product[]> {
-    const supabase = await createClient();
+    // Gated here (not left to RLS) so every caller gets the same real
+    // check regardless of whether their own request happens to carry a
+    // Supabase session RLS recognizes — e.g. this fixes an admin whose own
+    // customer profile isn't personally "exclusive" seeing an empty
+    // product list, and closes a real gap where /search?scope=exclusive
+    // had no server-side access check of its own at all.
+    const accountType = await getAccountType();
+    if (accountType !== "exclusive" && !(await isAdmin())) return [];
+
+    const supabase = await createServiceClient();
     const { data, error } = await supabase
       .from("products")
       .select("*")

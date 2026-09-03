@@ -29,6 +29,7 @@ export async function addProduct(
   const name = String(formData.get("name") ?? "").trim();
   const priceValue = String(formData.get("price") ?? "").trim();
   const image = String(formData.get("image_url") ?? "").trim();
+  const backImage = String(formData.get("back_image_url") ?? "").trim() || null;
   const category = String(formData.get("category") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
   const isExclusive = formData.get("is_exclusive") === "on";
@@ -57,11 +58,12 @@ export async function addProduct(
     return { ok: false, message: "A WAV file is required for digital downloads." };
   }
 
-  const supabase = await createClient();
+  const supabase = await createServiceClient();
   const { error } = await supabase.from("products").insert({
     name,
     price,
     image,
+    back_image: backImage,
     category: category || null,
     description: description || null,
     is_exclusive: isExclusive,
@@ -99,6 +101,7 @@ export async function updateProduct(
   const name = String(formData.get("name") ?? "").trim();
   const priceValue = String(formData.get("price") ?? "").trim();
   const image = String(formData.get("image_url") ?? "").trim();
+  const backImage = String(formData.get("back_image_url") ?? "").trim() || null;
   const category = String(formData.get("category") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
   const isExclusive = formData.get("is_exclusive") === "on";
@@ -131,13 +134,14 @@ export async function updateProduct(
     return { ok: false, message: "A WAV file is required for digital downloads." };
   }
 
-  const supabase = await createClient();
+  const supabase = await createServiceClient();
   const { error } = await supabase
     .from("products")
     .update({
       name,
       price,
       image,
+      back_image: backImage,
       category: category || null,
       description: description || null,
       is_exclusive: isExclusive,
@@ -176,7 +180,11 @@ export async function moveProductOrder(formData: FormData) {
     return;
   }
 
-  const supabase = await createClient();
+  // Service client — same reasoning as deleteProduct below: an exclusive
+  // product's read/update is governed by RLS policies that silently affect
+  // zero rows rather than erroring, so reordering could look like it did
+  // nothing for exclusive products specifically.
+  const supabase = await createServiceClient();
 
   const { data: current } = await supabase
     .from("products")
@@ -223,7 +231,9 @@ export async function moveProductOrder(formData: FormData) {
   revalidatePath("/admin");
 }
 
-export async function deleteProduct(formData: FormData) {
+export async function deleteProduct(
+  formData: FormData
+): Promise<{ ok: boolean; message: string }> {
   if (!(await isAdmin())) {
     redirect("/admin/login");
   }
@@ -231,10 +241,17 @@ export async function deleteProduct(formData: FormData) {
   const productId = String(formData.get("product_id") ?? "").trim();
 
   if (!productId) {
-    return;
+    return { ok: false, message: "Missing product." };
   }
 
-  const supabase = await createClient();
+  // Service client, not the RLS-bound one — an exclusive product's DELETE
+  // is governed by the same "Admins can manage products" policy as its
+  // SELECT, and Postgres RLS silently deletes zero rows (no thrown error)
+  // when a row falls outside a policy, rather than reporting a failure —
+  // which is exactly why this looked like "nothing happens" in the admin
+  // panel instead of a visible error. See app/api/admin/products/route.ts
+  // for the read-side version of the same fix.
+  const supabase = await createServiceClient();
 
   const { data: existing } = await supabase
     .from("products")
@@ -242,27 +259,30 @@ export async function deleteProduct(formData: FormData) {
     .eq("id", productId)
     .single();
 
-  const { error } = await supabase
+  const { error, count } = await supabase
     .from("products")
-    .delete()
+    .delete({ count: "exact" })
     .eq("id", productId);
 
   if (error) {
     console.error("Failed to delete product:", error.message);
-    return;
+    return { ok: false, message: error.message };
+  }
+
+  if (!count) {
+    return { ok: false, message: "Product not found — it may already be deleted." };
   }
 
   if (existing?.digital_file_path) {
-    const serviceClient = await createServiceClient();
-    await serviceClient.storage
-      .from(DIGITAL_DOWNLOADS_BUCKET)
-      .remove([existing.digital_file_path]);
+    await supabase.storage.from(DIGITAL_DOWNLOADS_BUCKET).remove([existing.digital_file_path]);
   }
 
   revalidatePath("/");
   revalidatePath("/collections");
   revalidatePath("/exclusive");
   revalidatePath("/admin");
+
+  return { ok: true, message: "Product deleted." };
 }
 
 export async function addUnreleasedMedia(

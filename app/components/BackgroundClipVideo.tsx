@@ -60,6 +60,12 @@ export default function BackgroundClipVideo({
       disablePictureInPicture
       controls={false}
       controlsList="nodownload nofullscreen noremoteplayback"
+      // Nothing on this decorative background video should ever be able to
+      // pause it — no controls are shown, there's nothing to click. If it
+      // stops anyway (a stalled autoplay attempt, a source swap, etc.),
+      // immediately try again instead of leaving it sitting there paused
+      // with the browser's own "tap to play" affordance showing.
+      onPause={() => videoRef.current?.play().catch(() => {})}
       className={className}
     >
       <source src={src} type="video/mp4" />

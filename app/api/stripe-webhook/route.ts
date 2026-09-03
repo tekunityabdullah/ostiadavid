@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createServiceClient } from "@/lib/supabase/server";
 import { sendDigitalDownloadEmail } from "@/lib/digital-delivery";
+import { trackKlaviyoEvent } from "@/lib/klaviyo";
 
 function getStripe() {
   return new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -49,6 +50,7 @@ export async function POST(request: Request) {
             price: number;
             quantity: number;
             isDigital?: boolean;
+            isExclusive?: boolean;
           }>;
 
           const total = (session.amount_total ?? 0) / 100;
@@ -79,6 +81,21 @@ export async function POST(request: Request) {
 
           const recipientEmail = session.customer_details?.email ?? session.customer_email;
           await sendDigitalDownloadEmail(recipientEmail, cartItems);
+
+          const isExclusiveOrder = cartItems.some((item) => item.isExclusive);
+          await trackKlaviyoEvent({
+            email: recipientEmail,
+            metricName: "Order Placed",
+            properties: {
+              order_type: isExclusiveOrder ? "exclusive" : "regular",
+              total,
+              items: cartItems.map((item) => ({
+                name: item.name,
+                quantity: item.quantity,
+                price: item.price,
+              })),
+            },
+          });
         }
         break;
       }
@@ -125,6 +142,20 @@ async function upgradeUserByStripeCustomer(
   if (customer.deleted || !("email" in customer) || !customer.email) return;
 
   const email = customer.email;
+  const [firstName, ...rest] = (customer.name ?? "").trim().split(/\s+/);
+  const lastName = rest.join(" ");
+
+  // Look up the pre-upgrade state first so a renewal/status-refresh webhook
+  // (this handler also runs on customer.subscription.updated and
+  // invoice.payment_succeeded, not just the first subscribe) doesn't
+  // re-fire "Exclusive Membership Started" for someone who's already
+  // exclusive.
+  const { data: existing } = await supabase
+    .from("profiles")
+    .select("account_type")
+    .eq("email", email)
+    .single();
+  const wasAlreadyExclusive = existing?.account_type === "exclusive";
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -149,6 +180,15 @@ async function upgradeUserByStripeCustomer(
         .eq("id", user.id);
     }
   }
+
+  if (!wasAlreadyExclusive) {
+    await trackKlaviyoEvent({
+      email,
+      metricName: "Exclusive Membership Started",
+      firstName: firstName || undefined,
+      lastName: lastName || undefined,
+    });
+  }
 }
 
 async function upgradeExclusiveFromSession(
@@ -159,8 +199,28 @@ async function upgradeExclusiveFromSession(
     typeof session.customer === "string" ? session.customer : null;
   const userId = session.metadata?.user_id;
   const email = session.metadata?.email || session.customer_details?.email;
+  const [firstName, ...rest] = (session.customer_details?.name ?? "")
+    .trim()
+    .split(/\s+/);
+  const lastName = rest.join(" ");
+
+  async function notifyIfNewlyExclusive(wasAlreadyExclusive: boolean) {
+    if (wasAlreadyExclusive || !email) return;
+    await trackKlaviyoEvent({
+      email,
+      metricName: "Exclusive Membership Started",
+      firstName: firstName || undefined,
+      lastName: lastName || undefined,
+    });
+  }
 
   if (userId) {
+    const { data: existing } = await supabase
+      .from("profiles")
+      .select("account_type")
+      .eq("id", userId)
+      .single();
+
     await supabase
       .from("profiles")
       .update({
@@ -168,10 +228,18 @@ async function upgradeExclusiveFromSession(
         stripe_customer_id: customerId,
       })
       .eq("id", userId);
+
+    await notifyIfNewlyExclusive(existing?.account_type === "exclusive");
     return;
   }
 
   if (email) {
+    const { data: existing } = await supabase
+      .from("profiles")
+      .select("account_type")
+      .eq("email", email)
+      .single();
+
     await supabase
       .from("profiles")
       .update({
@@ -179,6 +247,8 @@ async function upgradeExclusiveFromSession(
         stripe_customer_id: customerId,
       })
       .eq("email", email);
+
+    await notifyIfNewlyExclusive(existing?.account_type === "exclusive");
   }
 }
 

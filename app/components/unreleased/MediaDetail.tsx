@@ -433,12 +433,16 @@ function VideoDetail({
     });
   };
 
-  // Desktop equivalent of the tap above, via hover: moving the cursor onto
-  // the video shows the overlay and holds it up for as long as the cursor
-  // stays there; moving away schedules the same auto-hide — like YouTube.
-  const handleMouseEnter = () => {
+  // Desktop equivalent of the tap above, via the mouse: any movement shows
+  // the overlay and resets the auto-hide countdown — not just crossing
+  // into the video once. In fullscreen especially, the cursor never
+  // "leaves" the container (it fills the whole screen), so onMouseEnter
+  // alone only ever fired once; onMouseMove is what actually tracks
+  // ongoing activity, exactly like YouTube.
+  const handleMouseMove = () => {
     setControlsVisible(true);
-    clearHideTimer();
+    if (isPlaying) scheduleAutoHide();
+    else clearHideTimer();
   };
 
   const handleMouseLeave = () => {
@@ -497,13 +501,13 @@ function VideoDetail({
 
       <div
         ref={containerRef}
-        onMouseEnter={handleMouseEnter}
+        onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
-        className={
+        className={`${
           isFullscreen
             ? "fixed inset-0 z-300 flex items-center justify-center bg-black"
             : "relative flex aspect-video w-full items-center justify-center overflow-hidden bg-white/5"
-        }
+        } ${isFullscreen && !controlsVisible ? "cursor-none" : ""}`}
       >
           {error ? (
             <p className="text-sm uppercase tracking-tight text-white/50">Failed to load video.</p>
@@ -532,7 +536,9 @@ function VideoDetail({
                 disablePictureInPicture
                 disableRemotePlayback
                 onContextMenu={(e) => e.preventDefault()}
-                className="h-full w-full cursor-pointer object-contain"
+                className={`h-full w-full object-contain ${
+                  isFullscreen && !controlsVisible ? "cursor-none" : "cursor-pointer"
+                }`}
               />
 
               {/* In fullscreen there's no "above the video" position left —

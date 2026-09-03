@@ -11,6 +11,24 @@
   color: #000;
 }
 
+/* Chrome/Firefox default <button> to a pointer cursor on their own, but
+   Safari (desktop and iOS) leaves it as the plain arrow unless a page says
+   otherwise — which is why some buttons across the site showed no pointer
+   cursor there. Fixed once, everywhere, instead of adding cursor-pointer to
+   every individual button — put in @layer base so any button that already
+   sets its own cursor utility (cursor-not-allowed on disabled, etc.) still
+   wins, since Tailwind's utilities layer always cascades after base
+   regardless of selector specificity. */
+@layer base {
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+
  
 
 /* Prevent viewport zoom */

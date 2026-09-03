@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
+import { isAdmin } from "@/lib/auth";
 
+// Service client (bypasses RLS), gated by our own isAdmin() check instead —
+// see app/api/admin/products/route.ts for why.
 export async function GET() {
-  const supabase = await createClient();
+  if (!(await isAdmin())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const supabase = await createServiceClient();
   const { data, error } = await supabase
     .from("unreleased_albums")
     .select("*")

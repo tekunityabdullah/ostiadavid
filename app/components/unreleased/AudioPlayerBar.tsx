@@ -28,7 +28,6 @@ function VolumeIcon({ volume, muted }: { volume: number; muted: boolean }) {
   return <Volume2 size={16} />;
 }
 
-const POSITION_STORAGE_KEY = "osita-player-bar-position";
 const EDGE_MARGIN = 16; // px from the true viewport edge to the bar's near edge
 
 type BarPosition = { x: number; y: number };
@@ -67,6 +66,73 @@ function isInteractiveTarget(target: EventTarget | null): boolean {
   return Boolean(target.closest("button, a, input"));
 }
 
+// Shared edge/corner-drag mechanics — used separately for the full bar
+// (desktop only) and the minimized card (mobile only), each with its own
+// remembered position so the two never interfere with each other.
+function useEdgeDrag(enabled: boolean, storageKey: string) {
+  const [position, setPosition] = useState<BarPosition | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const ref = useRef<HTMLDivElement | null>(null);
+  const dragOffsetRef = useRef({ dx: 0, dy: 0 });
+  const halfSizeRef = useRef({ halfWidth: 0, halfHeight: 0 });
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) setPosition(JSON.parse(raw));
+    } catch {
+      // ignore — falls back to the default pinned position
+    }
+  }, [storageKey]);
+
+  const handleDragStart = (e: React.PointerEvent) => {
+    if (!enabled || !ref.current || isInteractiveTarget(e.target)) return;
+    const rect = ref.current.getBoundingClientRect();
+    halfSizeRef.current = { halfWidth: rect.width / 2, halfHeight: rect.height / 2 };
+    dragOffsetRef.current = {
+      dx: e.clientX - (rect.left + rect.width / 2),
+      dy: e.clientY - (rect.top + rect.height / 2),
+    };
+    setDragging(true);
+    (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
+  };
+
+  const handleDragMove = (e: React.PointerEvent) => {
+    if (!dragging) return;
+    const { halfWidth, halfHeight } = halfSizeRef.current;
+    const rect = {
+      left: EDGE_MARGIN + halfWidth,
+      right: window.innerWidth - EDGE_MARGIN - halfWidth,
+      top: EDGE_MARGIN + halfHeight,
+      bottom: window.innerHeight - EDGE_MARGIN - halfHeight,
+    };
+    const targetX = e.clientX - dragOffsetRef.current.dx;
+    const targetY = e.clientY - dragOffsetRef.current.dy;
+    setPosition(nearestPerimeterPoint(targetX, targetY, rect));
+  };
+
+  const handleDragEnd = (e: React.PointerEvent) => {
+    if (!dragging) return;
+    setDragging(false);
+    (e.currentTarget as Element).releasePointerCapture?.(e.pointerId);
+    setPosition((current) => {
+      try {
+        if (current) localStorage.setItem(storageKey, JSON.stringify(current));
+      } catch {
+        // ignore — position just won't persist across reloads
+      }
+      return current;
+    });
+  };
+
+  const style: React.CSSProperties =
+    enabled && position
+      ? { left: position.x, top: position.y, right: "auto", bottom: "auto", transform: "translate(-50%, -50%)" }
+      : {};
+
+  return { ref, position, dragging, style, handleDragStart, handleDragMove, handleDragEnd };
+}
+
 export default function AudioPlayerBar() {
   const {
     currentTrack,
@@ -100,17 +166,7 @@ export default function AudioPlayerBar() {
   // hides itself while you're actually looking at that page.
   const isOnTrackPage = currentTrack && pathname === `/unreleased/${currentTrack.id}`;
 
-  // Desktop-only: drag the bar itself (no separate handle) — but only
-  // along the screen's edges and corners, never into the open middle.
-  // Position is remembered across navigation/reloads; mobile always keeps
-  // the plain bottom-center pill.
   const [isDesktop, setIsDesktop] = useState(false);
-  const [position, setPosition] = useState<BarPosition | null>(null);
-  const [dragging, setDragging] = useState(false);
-  const barRef = useRef<HTMLDivElement | null>(null);
-  const dragOffsetRef = useRef({ dx: 0, dy: 0 });
-  const halfSizeRef = useRef({ halfWidth: 0, halfHeight: 0 });
-
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 1024px)");
     setIsDesktop(mq.matches);
@@ -119,61 +175,14 @@ export default function AudioPlayerBar() {
     return () => mq.removeEventListener("change", onChange);
   }, []);
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(POSITION_STORAGE_KEY);
-      if (raw) setPosition(JSON.parse(raw));
-    } catch {
-      // ignore — falls back to the default bottom-center position
-    }
-  }, []);
-
-  const handleDragStart = (e: React.PointerEvent) => {
-    if (!isDesktop || !barRef.current || isInteractiveTarget(e.target)) return;
-    const rect = barRef.current.getBoundingClientRect();
-    halfSizeRef.current = { halfWidth: rect.width / 2, halfHeight: rect.height / 2 };
-    dragOffsetRef.current = {
-      dx: e.clientX - (rect.left + rect.width / 2),
-      dy: e.clientY - (rect.top + rect.height / 2),
-    };
-    setDragging(true);
-    (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
-  };
-
-  const handleDragMove = (e: React.PointerEvent) => {
-    if (!dragging) return;
-    const { halfWidth, halfHeight } = halfSizeRef.current;
-    const rect = {
-      left: EDGE_MARGIN + halfWidth,
-      right: window.innerWidth - EDGE_MARGIN - halfWidth,
-      top: EDGE_MARGIN + halfHeight,
-      bottom: window.innerHeight - EDGE_MARGIN - halfHeight,
-    };
-    const targetX = e.clientX - dragOffsetRef.current.dx;
-    const targetY = e.clientY - dragOffsetRef.current.dy;
-    setPosition(nearestPerimeterPoint(targetX, targetY, rect));
-  };
-
-  const handleDragEnd = (e: React.PointerEvent) => {
-    if (!dragging) return;
-    setDragging(false);
-    (e.currentTarget as Element).releasePointerCapture?.(e.pointerId);
-    setPosition((current) => {
-      try {
-        if (current) localStorage.setItem(POSITION_STORAGE_KEY, JSON.stringify(current));
-      } catch {
-        // ignore — position just won't persist across reloads
-      }
-      return current;
-    });
-  };
+  // Full bar: draggable on desktop only, along edges/corners.
+  const expandedDrag = useEdgeDrag(isDesktop, "osita-player-bar-position");
+  // Minimized card: draggable on mobile only, along edges/corners — its
+  // own separate remembered position so it never jumps to wherever the
+  // full bar was last dragged (or vice versa).
+  const minimizedDrag = useEdgeDrag(!isDesktop, "osita-player-mini-position");
 
   if (!currentTrack || isOnTrackPage) return null;
-
-  const draggedStyle: React.CSSProperties =
-    isDesktop && position
-      ? { left: position.x, top: position.y, bottom: "auto", transform: "translate(-50%, -50%)" }
-      : {};
 
   // Minimized: a small square card (cover art + title, like a grid tile)
   // instead of the full bar — playback keeps going the whole time, this is
@@ -181,7 +190,16 @@ export default function AudioPlayerBar() {
   // back to the full bar; tapping the card itself goes to the track's page.
   if (minimized) {
     return (
-      <div className="fixed bottom-3 right-3 z-150 flex items-start gap-0.5">
+      <div
+        ref={minimizedDrag.ref}
+        style={minimizedDrag.style}
+        onPointerDown={minimizedDrag.handleDragStart}
+        onPointerMove={minimizedDrag.handleDragMove}
+        onPointerUp={minimizedDrag.handleDragEnd}
+        className={`fixed z-150 flex items-start gap-0.5 ${
+          !isDesktop ? (minimizedDrag.dragging ? "cursor-grabbing" : "cursor-grab") : ""
+        } ${!isDesktop && minimizedDrag.position ? "" : "bottom-3 right-3"}`}
+      >
         {/* Centered against just the image box (h-20), not the whole card
             — the title line below the image would otherwise pull a
             plain items-center alignment down off the image's true center. */}
@@ -222,14 +240,14 @@ export default function AudioPlayerBar() {
 
   return (
     <div
-      ref={barRef}
-      style={draggedStyle}
-      onPointerDown={handleDragStart}
-      onPointerMove={handleDragMove}
-      onPointerUp={handleDragEnd}
+      ref={expandedDrag.ref}
+      style={expandedDrag.style}
+      onPointerDown={expandedDrag.handleDragStart}
+      onPointerMove={expandedDrag.handleDragMove}
+      onPointerUp={expandedDrag.handleDragEnd}
       className={`fixed z-150 flex items-center gap-0.5 ${
-        isDesktop ? (dragging ? "cursor-grabbing" : "cursor-grab") : ""
-      } ${isDesktop && position ? "" : "inset-x-0 bottom-3 justify-center"}`}
+        isDesktop ? (expandedDrag.dragging ? "cursor-grabbing" : "cursor-grab") : ""
+      } ${isDesktop && expandedDrag.position ? "" : "inset-x-0 bottom-3 justify-center"}`}
     >
       <button
         onClick={() => setMinimized(true)}

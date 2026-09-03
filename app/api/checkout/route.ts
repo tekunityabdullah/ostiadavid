@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { CartItem, ShippingAddress } from "@/lib/types";
 import { printfulAPI } from "@/lib/printful";
 import { sendDigitalDownloadEmail } from "@/lib/digital-delivery";
+import { trackKlaviyoEvent } from "@/lib/klaviyo";
 
 function getStripe() {
   return new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -167,6 +168,7 @@ export async function POST(request: Request) {
         price: i.price,
         quantity: i.quantity,
         isDigital: i.isDigital ?? false,
+        isExclusive: i.isExclusive ?? false,
       }))
     ),
   },
@@ -176,6 +178,21 @@ export async function POST(request: Request) {
         // Check if any items are Printful products and create order
         await createPrintfulOrderIfNeeded(items, user, shippingAddress as ShippingAddress);
         await sendDigitalDownloadEmail(user?.email, items);
+
+        const isExclusiveOrder = items.some((i) => i.isExclusive);
+        await trackKlaviyoEvent({
+          email: user?.email,
+          metricName: "Order Placed",
+          properties: {
+            order_type: isExclusiveOrder ? "exclusive" : "regular",
+            total: total / 100,
+            items: items.map((i) => ({
+              name: i.name,
+              quantity: i.quantity,
+              price: i.price,
+            })),
+          },
+        });
 
         return NextResponse.json({ success: true });
       } else {

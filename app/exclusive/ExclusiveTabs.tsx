@@ -3,9 +3,9 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { EventItem, Product, UnreleasedMediaSummary } from "@/lib/types";
-import ProductCard from "../components/ProductCard";
 import MediaLibrary from "../components/unreleased/MediaLibrary";
 import EventCard from "./EventCard";
+import ExclusiveClothesCard from "./ExclusiveClothesCard";
 
 type Tab = "clothes" | "unreleased" | "events";
 type EventFilter = "upcoming" | "past";
@@ -106,9 +106,9 @@ export default function ExclusiveTabs({ products, media, events }: ExclusiveTabs
             No exclusive drops available yet.
           </p>
         ) : (
-          <div className="grid w-full grid-cols-2 gap-4 px-3 md:grid-cols-4 md:px-[60px]">
+          <div className="flex w-full flex-col items-center">
             {products.map((product) => (
-              <ProductCard key={product.id} product={product} />
+              <ExclusiveClothesCard key={product.id} product={product} />
             ))}
           </div>
         ))}

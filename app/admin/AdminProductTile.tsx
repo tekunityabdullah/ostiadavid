@@ -29,7 +29,11 @@ export default function AdminProductTile({ product, position, onDeleted, onUpdat
     formData.set("product_id", product.id);
 
     try {
-      await deleteProduct(formData);
+      const result = await deleteProduct(formData);
+      if (!result.ok) {
+        alert(result.message);
+        return;
+      }
       onDeleted?.();
     } finally {
       setDeleting(false);

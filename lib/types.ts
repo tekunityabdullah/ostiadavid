@@ -17,6 +17,10 @@ export interface Product {
   // cart/checkout still requires one.
   price: number | null;
   image: string;
+  // Optional second image (e.g. the back of a jacket) — shown on the
+  // Exclusive > Clothes grid via hover (desktop) / tap (mobile). Null means
+  // the card just shows `image` with no toggle.
+  back_image?: string | null;
   category: string | null;
   description: string | null;
   is_exclusive: boolean;

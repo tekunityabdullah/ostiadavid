@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { getPostLoginRedirect } from "@/lib/getPostLoginRedirect";
+import { trackAccountCreated } from "./actions";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { Eye, EyeOff } from "lucide-react";
@@ -90,6 +91,9 @@ export default function SignupPage() {
       setSignupLoading(false);
       return;
     }
+
+    // Fire-and-forget — a Klaviyo hiccup should never block signup.
+    trackAccountCreated(signupEmail, firstName, lastName).catch(() => {});
 
     if (data.session) {
       window.location.href = "/";

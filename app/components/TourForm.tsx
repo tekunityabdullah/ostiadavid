@@ -1,17 +1,30 @@
 "use client";
 
+import { useActionState } from "react";
 import { Check } from "lucide-react";
+import { submitTourEmail, type TourFormState } from "../tour/actions";
+
+const initialState: TourFormState = { ok: false, message: "" };
 
 export default function TourForm() {
+  const [state, dispatch, pending] = useActionState(submitTourEmail, initialState);
+
+  if (state.ok) {
+    return (
+      <div className="w-full max-w-[448px] flex flex-col items-center gap-2 text-center">
+        <p className="text-sm uppercase tracking-tight text-white">You&apos;re on the list.</p>
+        <p className="text-xs text-white/50">We&apos;ll email you as soon as dates are announced.</p>
+      </div>
+    );
+  }
+
   return (
-    <form
-      className="w-full max-w-[448px] flex flex-col items-center gap-1"
-      onSubmit={(e) => e.preventDefault()}
-    >
+    <form action={dispatch} className="w-full max-w-[448px] flex flex-col items-center gap-1">
       <div className="w-full">
         <input
           className="w-full px-4 py-3 bg-transparent border-0 border-b border-black/30 text-white text-center text-sm font-sans outline-none transition-colors duration-200 focus:border-white placeholder:text-white"
           type="email"
+          name="email"
           id="tour-email"
           aria-label="Enter Email For Updates"
           placeholder="ENTER EMAIL FOR UPDATES"
@@ -45,11 +58,16 @@ export default function TourForm() {
         </label>
       </div>
 
+      {!state.ok && state.message && (
+        <p className="mt-2 text-xs text-red-300 text-center">{state.message}</p>
+      )}
+
       <button
-        className="mt-4 px-8 py-2 text-xs uppercase tracking-tight font-medium font-sans text-black bg-white border-none cursor-pointer transition-colors duration-200 hover:bg-[#e5e5e5] active:scale-95"
+        className="mt-4 px-8 py-2 text-xs uppercase tracking-tight font-medium font-sans text-black bg-white border-none cursor-pointer transition-colors duration-200 hover:bg-[#e5e5e5] active:scale-95 disabled:opacity-50"
         type="submit"
+        disabled={pending}
       >
-        SUBMIT
+        {pending ? "SUBMITTING..." : "SUBMIT"}
       </button>
     </form>
   );

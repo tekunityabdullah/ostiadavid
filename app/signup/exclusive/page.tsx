@@ -186,22 +186,20 @@ function SignupForm() {
         </p>
       )}
 
-      <div className="grid w-full grid-cols-2 gap-2">
-        <input
-          type="text"
-          placeholder="FIRST NAME"
-          value={firstName}
-          onChange={(e) => setFirstName(e.target.value)}
-          className="w-full px-4 py-2 bg-transparent text-white text-[10px] outline-none text-center placeholder:text-white/40 placeholder:text-[10px]"
-        />
-        <input
-          type="text"
-          placeholder="LAST NAME"
-          value={lastName}
-          onChange={(e) => setLastName(e.target.value)}
-          className="w-full px-4 py-2 bg-transparent text-white text-[10px] outline-none text-center placeholder:text-white/40 placeholder:text-[10px]"
-        />
-      </div>
+      <input
+        type="text"
+        placeholder="FIRST NAME"
+        value={firstName}
+        onChange={(e) => setFirstName(e.target.value)}
+        className="w-full px-4 py-2 bg-transparent text-white text-[10px] outline-none text-center placeholder:text-white/40 placeholder:text-[10px]"
+      />
+      <input
+        type="text"
+        placeholder="LAST NAME"
+        value={lastName}
+        onChange={(e) => setLastName(e.target.value)}
+        className="w-full px-4 py-2 bg-transparent text-white text-[10px] outline-none text-center placeholder:text-white/40 placeholder:text-[10px]"
+      />
 
       {!existingAccount && (
         <>

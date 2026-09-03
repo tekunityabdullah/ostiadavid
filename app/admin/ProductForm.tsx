@@ -27,6 +27,10 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
   );
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(product?.image ?? null);
+  const [backImageFile, setBackImageFile] = useState<File | null>(null);
+  const [backImagePreview, setBackImagePreview] = useState<string | null>(
+    product?.back_image ?? null
+  );
   const [digitalFile, setDigitalFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
@@ -38,6 +42,8 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
       if (!isEditing) {
         setImageFile(null);
         setImagePreview(null);
+        setBackImageFile(null);
+        setBackImagePreview(null);
         setDigitalFile(null);
         setIsDigital(false);
         formRef.current?.reset();
@@ -70,6 +76,14 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
         return;
       }
 
+      let backImageUrl = new FormData(formRef.current).get("back_image_url");
+      let backImageUrlString = typeof backImageUrl === "string" ? backImageUrl.trim() : "";
+
+      if (backImageFile) {
+        const upload = await uploadAdminFile("product-images", backImageFile);
+        backImageUrlString = upload.publicUrl;
+      }
+
       // Keep the existing digital file by default when editing — only
       // replace it if the admin actually picked a new one.
       let digitalFilePath = product?.digital_file_path ?? "";
@@ -88,8 +102,10 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
 
       const fd = new FormData(formRef.current);
       fd.delete("image_file");
+      fd.delete("back_image_file");
       fd.delete("digital_file");
       fd.set("image_url", imageUrlString);
+      fd.set("back_image_url", backImageUrlString);
       fd.set("digital_file_path", digitalFilePath);
 
       dispatch(fd);
@@ -171,6 +187,37 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
           name="image_url"
           type="url"
           defaultValue={product?.image ?? ""}
+          placeholder="https://..."
+          className={`${inputClass} mt-2`}
+        />
+      </Field>
+
+      <Field
+        label="Back image (optional)"
+        hint="Shown on the Exclusive > Clothes grid on hover (desktop) or tap (mobile) — e.g. the back of a jacket. Leave blank if this product only needs one image."
+      >
+        <div className="flex flex-wrap items-center gap-3">
+          {backImagePreview && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={backImagePreview} alt="" className="h-11 w-11 shrink-0 object-cover" />
+          )}
+          <input
+            name="back_image_file"
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files?.[0] ?? null;
+              setBackImageFile(file);
+              setBackImagePreview(file ? URL.createObjectURL(file) : product?.back_image ?? null);
+            }}
+            className={fileInputClass}
+          />
+        </div>
+        <p className="mt-2 text-xs text-white/40">Or paste an image URL instead:</p>
+        <input
+          name="back_image_url"
+          type="url"
+          defaultValue={product?.back_image ?? ""}
           placeholder="https://..."
           className={`${inputClass} mt-2`}
         />

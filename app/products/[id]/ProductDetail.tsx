@@ -116,6 +116,12 @@ export default function ProductDetail({ product }: ProductDetailProps) {
   }
 
   function handleQuickBuy() {
+    // Clicking Quick Buy again while it's already open just closes it.
+    if (quickBuyOpen) {
+      setQuickBuyOpen(false);
+      return;
+    }
+
     const item = getCartItem();
     if (!item) {
       setVariantError(true);
