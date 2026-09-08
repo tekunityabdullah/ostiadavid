@@ -84,7 +84,7 @@ export default function ExclusiveClothesCard({ product }: ExclusiveClothesCardPr
   const quickBuyItem = quickBuyOpen ? getCartItem() : null;
 
   return (
-    <div className="flex w-full flex-col items-center gap-4 py-10 border-b border-white/10 last:border-b-0">
+    <div className="flex w-full flex-col items-center gap-4 py-10">
       <div className="flex w-full max-w-[560px] items-center justify-between gap-4 px-4">
         <button
           onClick={handleAddToCart}

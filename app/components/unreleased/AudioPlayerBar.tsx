@@ -65,6 +65,11 @@ function isSliderTarget(target: EventTarget | null): boolean {
   return Boolean(target.closest("input"));
 }
 
+function isInteractiveTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  return Boolean(target.closest("button, a, input"));
+}
+
 // How far the pointer has to move before a press counts as a drag rather
 // than a tap — below this, a press-then-release on a button/link still
 // fires its normal click (expand, navigate) instead of being swallowed.
@@ -74,16 +79,21 @@ const DRAG_THRESHOLD = 6;
 // (desktop only) and the minimized card (mobile only), each with its own
 // remembered position so the two never interfere with each other.
 //
-// The minimized card's entire surface is either the chevron button or the
-// cover-art link — there's no neutral strip to grab — so dragging can't be
-// gated by "did the press start on a plain, non-interactive element" the
-// way it might be elsewhere. Instead every press (except on a slider) is
-// tracked from pointerdown, and only escalates into an actual drag once it
-// crosses DRAG_THRESHOLD; a press that never moves that far is left alone
-// and its underlying click still fires normally. A press that *does* drag
-// suppresses the click that would otherwise follow the release, so letting
-// go after a drag never also triggers "expand"/"navigate".
-function useEdgeDrag(enabled: boolean, storageKey: string) {
+// The full bar has plenty of non-interactive backdrop around its buttons —
+// `strictExclude: true` keeps the old, simpler behavior there: a press that
+// starts on a button/link/input never begins a drag at all, so ordinary
+// clicks (play/pause, skip, etc.) are never at risk of being swallowed by
+// a few pixels of incidental mouse movement.
+//
+// The minimized card has no such area — its entire surface is either the
+// chevron button or the cover-art link — so `strictExclude: false` tracks
+// every press (except on a slider) from pointerdown, only escalating into
+// an actual drag once it crosses DRAG_THRESHOLD; a press that never moves
+// that far is left alone and its underlying click still fires normally. A
+// press that *does* drag suppresses the click that would otherwise follow
+// the release, so letting go after a drag never also triggers
+// "expand"/"navigate".
+function useEdgeDrag(enabled: boolean, storageKey: string, strictExclude: boolean) {
   const [position, setPosition] = useState<BarPosition | null>(null);
   const [dragging, setDragging] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
@@ -104,6 +114,7 @@ function useEdgeDrag(enabled: boolean, storageKey: string) {
 
   const handleDragStart = (e: React.PointerEvent) => {
     if (!enabled || !ref.current || isSliderTarget(e.target)) return;
+    if (strictExclude && isInteractiveTarget(e.target)) return;
     pressingRef.current = true;
     draggedRef.current = false;
     startRef.current = { x: e.clientX, y: e.clientY };
@@ -217,12 +228,16 @@ export default function AudioPlayerBar() {
     return () => mq.removeEventListener("change", onChange);
   }, []);
 
-  // Full bar: draggable on desktop only, along edges/corners.
-  const expandedDrag = useEdgeDrag(isDesktop, "osita-player-bar-position");
+  // Full bar: draggable on desktop only, along edges/corners. Plenty of
+  // non-interactive backdrop around its buttons, so drags are only ever
+  // picked up from there — a click on play/pause/skip/etc. can never be
+  // mistaken for a drag.
+  const expandedDrag = useEdgeDrag(isDesktop, "osita-player-bar-position", true);
   // Minimized card: draggable on mobile only, along edges/corners — its
   // own separate remembered position so it never jumps to wherever the
-  // full bar was last dragged (or vice versa).
-  const minimizedDrag = useEdgeDrag(!isDesktop, "osita-player-mini-position");
+  // full bar was last dragged (or vice versa). No non-interactive area to
+  // grab, so this one tells taps from drags by movement instead.
+  const minimizedDrag = useEdgeDrag(!isDesktop, "osita-player-mini-position", false);
 
   if (!currentTrack || isOnTrackPage) return null;
 
