@@ -553,9 +553,12 @@ function VideoDetail({
                 </div>
               )}
 
-              {/* Floating control card, centered within the video like the reference design — a translucent dark pill, not a solid white block, so it sits on the video instead of standing out as a box. */}
+              {/* Floating transport controls, directly on the video — no
+                  pill/card behind them (no rounded box, no blur/tint), and
+                  the progress bar spans almost the full width instead of
+                  being boxed into a small centered card. */}
               <div
-                className={`absolute bottom-3 left-1/2 w-[70%] max-w-[280px] -translate-x-1/2 rounded-md bg-black/50 px-3 py-2 backdrop-blur-sm transition-opacity duration-300 sm:bottom-4 ${
+                className={`absolute bottom-1 left-1/2 w-[92%] -translate-x-1/2 transition-opacity duration-300 sm:bottom-2 ${
                   controlsVisible ? "opacity-100" : "pointer-events-none opacity-0"
                 }`}
               >
@@ -624,7 +627,7 @@ function VideoDetail({
               type="button"
               onClick={toggleFullscreen}
               aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
-              className={`absolute bottom-2 right-2 p-2 text-white/80 transition-opacity duration-300 hover:text-white sm:bottom-3 sm:right-3 ${
+              className={`absolute bottom-0 right-2 p-2 text-white/80 transition-opacity duration-300 hover:text-white sm:bottom-1 sm:right-3 ${
                 controlsVisible ? "opacity-100" : "pointer-events-none opacity-0"
               }`}
             >

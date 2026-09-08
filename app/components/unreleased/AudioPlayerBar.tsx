@@ -58,21 +58,38 @@ function nearestPerimeterPoint(px: number, py: number, rect: { left: number; rig
   return { x: clampedX, y: rect.bottom };
 }
 
-// Buttons, links, and the range sliders need normal clicks/drags to keep
-// working — only a pointerdown that starts outside all of those should
-// pick the bar up and start moving it.
-function isInteractiveTarget(target: EventTarget | null): boolean {
+// Range sliders need real pointer drags of their own (scrubbing/volume) —
+// those must never be hijacked into moving the whole bar instead.
+function isSliderTarget(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return false;
-  return Boolean(target.closest("button, a, input"));
+  return Boolean(target.closest("input"));
 }
+
+// How far the pointer has to move before a press counts as a drag rather
+// than a tap — below this, a press-then-release on a button/link still
+// fires its normal click (expand, navigate) instead of being swallowed.
+const DRAG_THRESHOLD = 6;
 
 // Shared edge/corner-drag mechanics — used separately for the full bar
 // (desktop only) and the minimized card (mobile only), each with its own
 // remembered position so the two never interfere with each other.
+//
+// The minimized card's entire surface is either the chevron button or the
+// cover-art link — there's no neutral strip to grab — so dragging can't be
+// gated by "did the press start on a plain, non-interactive element" the
+// way it might be elsewhere. Instead every press (except on a slider) is
+// tracked from pointerdown, and only escalates into an actual drag once it
+// crosses DRAG_THRESHOLD; a press that never moves that far is left alone
+// and its underlying click still fires normally. A press that *does* drag
+// suppresses the click that would otherwise follow the release, so letting
+// go after a drag never also triggers "expand"/"navigate".
 function useEdgeDrag(enabled: boolean, storageKey: string) {
   const [position, setPosition] = useState<BarPosition | null>(null);
   const [dragging, setDragging] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
+  const pressingRef = useRef(false);
+  const draggedRef = useRef(false);
+  const startRef = useRef({ x: 0, y: 0 });
   const dragOffsetRef = useRef({ dx: 0, dy: 0 });
   const halfSizeRef = useRef({ halfWidth: 0, halfHeight: 0 });
 
@@ -86,19 +103,29 @@ function useEdgeDrag(enabled: boolean, storageKey: string) {
   }, [storageKey]);
 
   const handleDragStart = (e: React.PointerEvent) => {
-    if (!enabled || !ref.current || isInteractiveTarget(e.target)) return;
+    if (!enabled || !ref.current || isSliderTarget(e.target)) return;
+    pressingRef.current = true;
+    draggedRef.current = false;
+    startRef.current = { x: e.clientX, y: e.clientY };
     const rect = ref.current.getBoundingClientRect();
     halfSizeRef.current = { halfWidth: rect.width / 2, halfHeight: rect.height / 2 };
     dragOffsetRef.current = {
       dx: e.clientX - (rect.left + rect.width / 2),
       dy: e.clientY - (rect.top + rect.height / 2),
     };
-    setDragging(true);
     (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
   };
 
   const handleDragMove = (e: React.PointerEvent) => {
-    if (!dragging) return;
+    if (!pressingRef.current) return;
+
+    if (!draggedRef.current) {
+      const moved = Math.hypot(e.clientX - startRef.current.x, e.clientY - startRef.current.y);
+      if (moved < DRAG_THRESHOLD) return;
+      draggedRef.current = true;
+      setDragging(true);
+    }
+
     const { halfWidth, halfHeight } = halfSizeRef.current;
     const rect = {
       left: EDGE_MARGIN + halfWidth,
@@ -112,9 +139,13 @@ function useEdgeDrag(enabled: boolean, storageKey: string) {
   };
 
   const handleDragEnd = (e: React.PointerEvent) => {
-    if (!dragging) return;
-    setDragging(false);
+    if (!pressingRef.current) return;
+    pressingRef.current = false;
     (e.currentTarget as Element).releasePointerCapture?.(e.pointerId);
+
+    if (!draggedRef.current) return; // plain tap — let its click fire normally
+
+    setDragging(false);
     setPosition((current) => {
       try {
         if (current) localStorage.setItem(storageKey, JSON.stringify(current));
@@ -125,12 +156,23 @@ function useEdgeDrag(enabled: boolean, storageKey: string) {
     });
   };
 
+  // A drag release is immediately followed by a synthetic click on
+  // whatever the pointer ended up over (the chevron button or the cover
+  // link) — swallow just that one so it doesn't also expand/navigate.
+  const handleClickCapture = (e: React.MouseEvent) => {
+    if (draggedRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      draggedRef.current = false;
+    }
+  };
+
   const style: React.CSSProperties =
     enabled && position
       ? { left: position.x, top: position.y, right: "auto", bottom: "auto", transform: "translate(-50%, -50%)" }
       : {};
 
-  return { ref, position, dragging, style, handleDragStart, handleDragMove, handleDragEnd };
+  return { ref, position, dragging, style, handleDragStart, handleDragMove, handleDragEnd, handleClickCapture };
 }
 
 export default function AudioPlayerBar() {
@@ -196,8 +238,10 @@ export default function AudioPlayerBar() {
         onPointerDown={minimizedDrag.handleDragStart}
         onPointerMove={minimizedDrag.handleDragMove}
         onPointerUp={minimizedDrag.handleDragEnd}
+        onPointerCancel={minimizedDrag.handleDragEnd}
+        onClickCapture={minimizedDrag.handleClickCapture}
         className={`fixed z-150 flex items-start gap-0.5 ${
-          !isDesktop ? (minimizedDrag.dragging ? "cursor-grabbing" : "cursor-grab") : ""
+          !isDesktop ? `touch-none ${minimizedDrag.dragging ? "cursor-grabbing" : "cursor-grab"}` : ""
         } ${!isDesktop && minimizedDrag.position ? "" : "bottom-3 right-3"}`}
       >
         {/* Centered against just the image box (h-20), not the whole card
@@ -245,8 +289,10 @@ export default function AudioPlayerBar() {
       onPointerDown={expandedDrag.handleDragStart}
       onPointerMove={expandedDrag.handleDragMove}
       onPointerUp={expandedDrag.handleDragEnd}
+      onPointerCancel={expandedDrag.handleDragEnd}
+      onClickCapture={expandedDrag.handleClickCapture}
       className={`fixed z-150 flex items-center gap-0.5 ${
-        isDesktop ? (expandedDrag.dragging ? "cursor-grabbing" : "cursor-grab") : ""
+        isDesktop ? `touch-none ${expandedDrag.dragging ? "cursor-grabbing" : "cursor-grab"}` : ""
       } ${isDesktop && expandedDrag.position ? "" : "inset-x-0 bottom-3 justify-center"}`}
     >
       <button
