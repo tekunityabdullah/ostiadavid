@@ -38,9 +38,13 @@ export function AccountLink() {
     const supabase = createClient();
     await supabase.auth.signOut();
     setOpen(false);
-    // Hard navigation — the client router cache could otherwise still
-    // serve a page rendered for the account that just signed out.
-    window.location.href = "/login";
+    // Reload in place rather than redirecting to /login — stays on
+    // whatever page you were on, but still a hard reload (not
+    // router.refresh()) so the client router cache can't keep serving a
+    // page rendered for the account that just signed out. If the current
+    // page itself requires being logged in, its own guard takes it from
+    // there — this doesn't force a destination.
+    window.location.reload();
   };
 
   useEffect(() => {
@@ -53,6 +57,18 @@ export function AccountLink() {
     document.addEventListener("mousedown", onClickOutside);
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, [open]);
+
+  // Distinct from "Exit Exclusive" (Link above, href="/"), which just
+  // leaves the Exclusive section while staying logged in — this actually
+  // ends the session and sends you to the Exclusive join/log-in page.
+  const handleSignOutOfExclusive = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    setOpen(false);
+    // Hard navigation — the client router cache could otherwise still
+    // serve a page rendered for the account that just signed out.
+    window.location.href = "/signup/exclusive";
+  };
 
   const handleCancelSubscription = async () => {
     if (!window.confirm("Cancel your Exclusive membership? You'll lose access immediately.")) {
@@ -112,6 +128,12 @@ export function AccountLink() {
             >
               Exit Exclusive
             </Link>
+            <button
+              onClick={handleSignOutOfExclusive}
+              className="block w-full px-4 py-2.5 text-left text-xs font-sans uppercase text-white/80 transition hover:bg-white/10 hover:text-white"
+            >
+              Sign Out Of Exclusive
+            </button>
             <button
               onClick={handleCancelSubscription}
               disabled={cancelling}

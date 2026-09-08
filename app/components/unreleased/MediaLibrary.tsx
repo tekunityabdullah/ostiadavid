@@ -75,7 +75,7 @@ export default function MediaLibrary({
             onClick={() => selectTab(value)}
             className={`font-sans uppercase transition ${
               value === "videos" ? "translate-x-1" : value === "images" ? "-translate-x-1" : ""
-            } ${tab === value ? "text-white" : "text-white/40 hover:text-white/70"}`}
+            } text-white hover:opacity-70`}
           >
             {label}
           </button>

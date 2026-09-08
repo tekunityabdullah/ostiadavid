@@ -39,7 +39,7 @@ export default function MediaDetail({ item, related, initialStreamUrl }: MediaDe
     <div className="w-full max-w-[900px]">
       <Link
         href="/exclusive?tab=unreleased"
-        className="mb-8 inline-flex items-center gap-1 font-sans text-[11px] uppercase text-white/40 transition hover:text-white"
+        className="mb-8 inline-flex items-center gap-1 font-sans text-[11px] uppercase text-white transition hover:opacity-70"
       >
         <ChevronLeft size={14} />
         Unreleased
@@ -237,7 +237,7 @@ function AudioDetail({ item }: { item: UnreleasedMediaSummary }) {
           <div className="flex items-center gap-4">
             <Link
               href="/cart?scope=exclusive"
-              className="text-xs uppercase tracking-tight text-white/50 transition hover:text-white"
+              className="text-xs uppercase tracking-tight text-white transition hover:opacity-70"
             >
               View Cart
             </Link>
@@ -646,7 +646,7 @@ function VideoDetail({
           <div className="flex items-center gap-4">
             <Link
               href="/cart?scope=exclusive"
-              className="text-xs uppercase tracking-tight text-white/50 transition hover:text-white"
+              className="text-xs uppercase tracking-tight text-white transition hover:opacity-70"
             >
               View Cart
             </Link>
