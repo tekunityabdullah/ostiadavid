@@ -140,7 +140,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
       <SubNav />
 
       <main className="pt-32 flex justify-center w-full max-w-[1400px] mx-auto flex-1">
-        <section className="flex flex-col lg:flex-row gap-8 lg:gap-16 px-4 md:px-[60px] pt-6 pb-12 w-full">
+        <section className="flex flex-col lg:flex-row lg:items-center gap-8 lg:gap-16 px-4 md:px-[60px] pt-6 pb-12 w-full">
           <div className="w-full max-w-[200px] mx-auto lg:max-w-none lg:w-1/2 aspect-[3/4] max-h-[600px] overflow-hidden bg-black">
             <img
   src={displayImage ?? ""}
