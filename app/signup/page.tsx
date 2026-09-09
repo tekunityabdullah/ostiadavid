@@ -123,6 +123,8 @@ export default function SignupPage() {
                 </label>
                 <input
                   type="email"
+                  name="email"
+                  autoComplete="email"
                   required
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
@@ -139,6 +141,8 @@ export default function SignupPage() {
                 <div className="relative">
                   <input
                     type={showLoginPassword ? "text" : "password"}
+                    name="password"
+                    autoComplete="current-password"
                     required
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
@@ -220,6 +224,8 @@ export default function SignupPage() {
                     </label>
                     <input
                       type="text"
+                      name="given-name"
+                      autoComplete="given-name"
                       required
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
@@ -233,6 +239,8 @@ export default function SignupPage() {
                     </label>
                     <input
                       type="text"
+                      name="family-name"
+                      autoComplete="family-name"
                       required
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
@@ -248,6 +256,8 @@ export default function SignupPage() {
                   </label>
                   <input
                     type="email"
+                    name="email"
+                    autoComplete="email"
                     required
                     value={signupEmail}
                     onChange={(e) => setSignupEmail(e.target.value)}
@@ -264,6 +274,8 @@ export default function SignupPage() {
                   <div className="relative">
                     <input
                       type={showSignupPassword ? "text" : "password"}
+                      name="new-password"
+                      autoComplete="new-password"
                       required
                       value={signupPassword}
                       onChange={(e) => setSignupPassword(e.target.value)}

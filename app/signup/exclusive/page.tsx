@@ -188,6 +188,8 @@ function SignupForm() {
 
       <input
         type="text"
+        name="given-name"
+        autoComplete="given-name"
         placeholder="FIRST NAME"
         value={firstName}
         onChange={(e) => setFirstName(e.target.value)}
@@ -195,6 +197,8 @@ function SignupForm() {
       />
       <input
         type="text"
+        name="family-name"
+        autoComplete="family-name"
         placeholder="LAST NAME"
         value={lastName}
         onChange={(e) => setLastName(e.target.value)}
@@ -205,6 +209,8 @@ function SignupForm() {
         <>
           <input
             type="email"
+            name="email"
+            autoComplete="email"
             placeholder="EMAIL"
             required
             value={email}
@@ -214,6 +220,8 @@ function SignupForm() {
           <div className="relative w-full">
             <input
               type={showPassword ? "text" : "password"}
+              name="new-password"
+              autoComplete="new-password"
               placeholder="CREATE PASSWORD"
               required
               minLength={6}
@@ -255,6 +263,8 @@ function SignupForm() {
       </div>
       <input
         type="text"
+        name="postal-code"
+        autoComplete="postal-code"
         placeholder="ZIP CODE"
         value={zipCode}
         onChange={(e) => setZipCode(e.target.value)}

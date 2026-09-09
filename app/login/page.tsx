@@ -80,10 +80,18 @@ export default function Page() {
 
         {/* CENTER AREA */}
         <div className="flex-1 flex items-center justify-center px-6">
-          <div className="w-full max-w-[340px] flex flex-col items-center">
+          {/* A real <form> (not just a div + button onClick) — browsers'
+              native autofill/password-manager heuristics rely heavily on
+              an actual form submission, not just matching input types. */}
+          <form
+            onSubmit={handleLogin}
+            className="w-full max-w-[340px] flex flex-col items-center"
+          >
             {/* EMAIL */}
             <input
               type="email"
+              name="email"
+              autoComplete="email"
               placeholder="EMAIL"
               required
               value={email}
@@ -96,6 +104,8 @@ export default function Page() {
             <div className="relative w-full">
               <input
                 type={showPassword ? "text" : "password"}
+                name="password"
+                autoComplete="current-password"
                 placeholder="PASSWORD"
                 required
                 value={password}
@@ -120,8 +130,8 @@ export default function Page() {
 
             {/* ENTER BUTTON */}
             <button
+              type="submit"
               disabled={loading}
-              onClick={handleLogin}
               className="
           mt-5  text-white uppercase
           text-[10px] font-light hover:opacity-60
@@ -130,7 +140,7 @@ export default function Page() {
             >
               {loading ? "ENTERING..." : "ENTER"}
             </button>
-          </div>
+          </form>
         </div>
 
         {/* FOOTER — now perfectly responsive */}
