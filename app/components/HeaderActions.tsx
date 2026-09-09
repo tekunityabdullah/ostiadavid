@@ -60,14 +60,16 @@ export function AccountLink() {
 
   // Distinct from "Exit Exclusive" (Link above, href="/"), which just
   // leaves the Exclusive section while staying logged in — this actually
-  // ends the session and sends you to the Exclusive join/log-in page.
+  // ends the session and sends you to the Exclusive log-in page (not the
+  // join/signup one — you already have an account, you're just signed out
+  // of it).
   const handleSignOutOfExclusive = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
     setOpen(false);
     // Hard navigation — the client router cache could otherwise still
     // serve a page rendered for the account that just signed out.
-    window.location.href = "/signup/exclusive";
+    window.location.href = "/login";
   };
 
   const handleCancelSubscription = async () => {
