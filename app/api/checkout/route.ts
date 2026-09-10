@@ -33,7 +33,7 @@ async function createPrintfulOrderIfNeeded(
   try {
     const supabase = await createClient();
 
-    // Check which items are Printful products
+     
     const printfulItems = [];
 
     for (const item of items) {
